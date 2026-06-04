@@ -1,0 +1,30 @@
+name: deploy-with-environments
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Image tag to deploy
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-dev:
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - name: Deploy dev
+        run: |
+          echo "Deploying dev with image tag: ${{ inputs.image_tag }}"
+
+  deploy-production:
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy production
+        run: |
+          echo "Deploying production with image tag: ${{ inputs.image_tag }}"
+
