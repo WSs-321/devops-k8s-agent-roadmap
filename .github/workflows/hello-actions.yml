@@ -1,0 +1,23 @@
+name: Hello workflows
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]  
+
+jobs:
+  Checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build project
+        shell: bash
+        run: |
+          echo Building project...
+          echo "Hello, world!"
