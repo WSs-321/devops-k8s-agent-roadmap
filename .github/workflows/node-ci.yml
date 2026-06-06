@@ -1,0 +1,63 @@
+# 只针对Node.js项目进行CI/CD(/app 目录之下)
+name: Node CI
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'app/**'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'app/**'
+  workflow_dispatch:
+    inputs:
+      version:
+        required: true
+        description: 'Node.js version to use'
+        default: '22'
+        type: string
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.version }}
+          cache: 'npm'
+      - run: npm install
+      - run: npm run lint
+      - run: npm run test
+      - run: npm run build
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+# jobs:
+#   codecheck:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#   lint:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - run: npm run lint
+#   test:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - run: npm run test
+#   build:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - run: npm run build
+
+#       - name: Run a one-line script
+#         run: echo Hello, world!
+
+
