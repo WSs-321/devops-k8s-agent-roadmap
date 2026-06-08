@@ -12,6 +12,6 @@ test("greet returns a greeting with the provided name", () => {
   assert.equal(greet("alice"), "hello, alice!");
 });
 
-test("greet falls back to world when no name is provided", () => {
-  assert.equal(greet(), "hello, world!");
+test("greet falls back to roadmap when no name is provided", () => {
+  assert.equal(greet(), "hello, roadmap!");
 });

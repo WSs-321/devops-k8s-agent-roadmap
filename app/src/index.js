@@ -2,7 +2,7 @@ function add(a, b) {
   return a + b;
 }
 
-function greet(name = "world") {
+function greet(name = "roadmap") {
   return `hello, ${name}!`;
 }
 
