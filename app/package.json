@@ -13,9 +13,8 @@
     "build": "node scripts/build.js",
     "start": "node src/index.js"
   },
-  "devdependencies": {
+  "devDependencies": {
     "eslint": "^9.0.0",
     "@eslint/js": "^9.0.0"
   }
-
 }
