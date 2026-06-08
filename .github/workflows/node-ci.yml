@@ -19,6 +19,9 @@ on:
         description: 'Node.js version to use'
         default: '22'
         type: string
+        
+permissions:
+  contents: read
 
 jobs:
   ci:
@@ -31,7 +34,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ inputs.version }}
+          node-version: ${{ inputs.version || '22' }}
           # cache: 'npm'
       - run: npm install
       - run: npm run lint
