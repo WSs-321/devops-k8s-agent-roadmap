@@ -19,7 +19,7 @@ on:
         description: 'Node.js version to use'
         default: '22'
         type: string
-        
+
 permissions:
   contents: read
 
@@ -35,8 +35,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ inputs.version || '22' }}
-          # cache: 'npm'
-      - run: npm install
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
       - run: npm run lint
       - run: npm run test
       - run: npm run build
