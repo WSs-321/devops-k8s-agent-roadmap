@@ -14,6 +14,7 @@ scene: git_message
 - 完成任意代码/文档/配置变更后，AI 必须自动按本规则生成 commit message
 - 禁止直接向 `main` 分支提交或推送变更
 - 若当前在 `main` 分支，先创建功能分支，分支名统一使用 `feature_<变更摘要>`，摘要使用小写英文短词并用 `-` 连接
+- message尽可能包含timetable中的day和任务信息
 - 生成 message 后无需向用户确认，直接执行：`git add -A`、`git commit -m "<message>"`、`git push -u origin <branch>`
 - 推送完成后，向用户回报：commit hash、message、分支名、PR 创建入口
 - 若可用 GitHub CLI，则优先创建 PR；否则提供 GitHub Compare 链接让用户创建 PR
