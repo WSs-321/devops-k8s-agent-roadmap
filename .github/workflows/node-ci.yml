@@ -35,8 +35,16 @@ jobs:
           cache-dependency-path: app/package-lock.json
       - run: npm ci
       - run: npm run lint
-      - run: npm run test
+      - run: npm run test:ci
       - run: npm run build
+
+      - name: upload test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: node-test-report
+          path: app/reports/junit.xml
+          retention-days: 5
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 # jobs:
