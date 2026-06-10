@@ -36,7 +36,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run test:ci
-      - run: npm run build
+      - run: npm run build:ci
 
       - name: upload test report
         uses: actions/upload-artifact@v4
