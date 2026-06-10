@@ -5,6 +5,8 @@ const projectRoot = path.resolve(__dirname, "..");
 const srcDir = path.join(projectRoot, "src");
 const distDir = path.join(projectRoot, "dist");
 
+const mode = process.argv.includes("--mode=ci") ? "ci" : "production";
+
 function clean(target) {
   if (fs.existsSync(target)) {
     fs.rmSync(target, { recursive: true, force: true });
@@ -21,6 +23,7 @@ function writeBuildInfo() {
     builtAt: new Date().toISOString(),
     nodeVersion: process.version,
     platform: process.platform,
+    mode,
   };
   fs.writeFileSync(
     path.join(distDir, "build-info.json"),
@@ -33,4 +36,4 @@ clean(distDir);
 copySources();
 writeBuildInfo();
 
-console.log(`build done -> ${distDir}`);
+console.log(`build done (${mode}) -> ${distDir}`);
