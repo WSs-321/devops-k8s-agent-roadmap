@@ -1,0 +1,28 @@
+name: Hello workflows
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/ci-docs.yml'
+  pull_request:
+    branches: [ "main" ]  
+    paths:
+      - 'docs/**'
+      - '.github/workflows/ci-docs.yml'
+
+jobs:
+  lintmarkdown:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Lint Markdown
+        uses: DavidAnson/markdownlint-cli2-action@v16
+        with:
+          globs:
+            docs/**/*.md
+            *.md
+            logs/**/*.md

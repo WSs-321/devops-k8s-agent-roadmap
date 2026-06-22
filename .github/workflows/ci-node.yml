@@ -4,10 +4,17 @@ name: Node CI
 # Controls when the workflow will run
 on:
   # Triggers the workflow on push or pull request events but only for the "main" branch
+  # 只在 app/ 目录或本 workflow 文件变更时触发，避免 docs/logs 提交浪费 CI
   push:
     branches: [ "main" ]
+    paths:
+      - 'app/**'
+      - '.github/workflows/ci-node.yml'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'app/**'
+      - '.github/workflows/ci-node.yml'
   workflow_dispatch:
     inputs:
       version:
