@@ -27,7 +27,7 @@ permissions:
   contents: read
 
 jobs:
-  ci:
+  node_ci:
     runs-on: ubuntu-latest
     strategy:
       matrix:
