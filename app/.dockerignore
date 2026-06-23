@@ -1,0 +1,11 @@
+node_modules
+dist
+test
+.github
+.git
+*.md
+.trae 
+.vscode
+.idea
+.eslintrc*
+eslint.config.js
