@@ -1,0 +1,52 @@
+name: docker CI
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'app/Dockerfile'
+      - 'app/.dockerignore'
+      - '.github/workflows/ci-docker.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'app/Dockerfile'
+      - 'app/.dockerignore'
+      - '.github/workflows/ci-docker.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  docker_ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4 
+      - name: Login ghcr
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Generate docker image metadata
+        id: metadata
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=sha,prefix=7
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{ version }}
+      - name: Build and push docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./app
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+
+
