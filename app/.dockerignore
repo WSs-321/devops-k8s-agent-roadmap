@@ -4,8 +4,9 @@ test
 .github
 .git
 *.md
-.trae 
+.trae
 .vscode
 .idea
 .eslintrc*
 eslint.config.js
+Dockerfile

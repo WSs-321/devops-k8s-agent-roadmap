@@ -11,4 +11,4 @@ if (require.main === module) {
   console.log(`1 + 2 = ${add(1, 2)}`);
 }
 
-module.exports = { add, greet };
+module.exports = { add, greet: (name = process.env.GREETING) => greet(name) };
