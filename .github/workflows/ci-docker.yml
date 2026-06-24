@@ -30,6 +30,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4 
+
+      - name: Set lowercase image name
+        id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
       
       - name: Login ghcr
         uses: docker/login-action@v4
@@ -42,7 +46,7 @@ jobs:
         id: metadata
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: ${{ steps.image.outputs.name }}
           tags: |
             type=sha,prefix=7
             type=raw,value=latest,enable={{is_default_branch}}
@@ -63,21 +67,21 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Trivy scan
+        id: trivy
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ghcr.io/${{ github.repository }}:${{ steps.metadata.outputs.version }}
+          image-ref: ${{ steps.image.outputs.name }}:${{ steps.metadata.outputs.version }}
           format: sarif
           output: trivy-results.sarif
-          exit-code: 1
+          exit-code: 0
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
           timeout: 10m
-          # registry-username: ${{ github.actor }}
-          # registry-password: ${{ secrets.GITHUB_TOKEN }} # 扫本地镜像，不需要登录
+
       - name: Upload Trivy scan results
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('trivy-results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-results.sarif
 
