@@ -18,20 +18,26 @@ on:
 permissions:
   contents: read
   packages: write
+  security-events: write
 
 jobs:
-  docker_ci:
+  build-docker-image:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    outputs:
+      tags: ${{ steps.metadata.outputs.tags }}
+      labels: ${{ steps.metadata.outputs.labels }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4 
+      
       - name: Login ghcr
-        if: github.event_name != 'pull_request'
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      
       - name: Generate docker image metadata
         id: metadata
         uses: docker/metadata-action@v5
@@ -41,12 +47,66 @@ jobs:
             type=sha,prefix=7
             type=raw,value=latest,enable={{is_default_branch}}
             type=semver,pattern={{ version }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./app
+          push: false
+          load: true
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trivy scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ghcr.io/${{ github.repository }}:${{ steps.metadata.outputs.version }}
+          format: sarif
+          output: trivy-results.sarif
+          exit-code: 1
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+          timeout: 10m
+          # registry-username: ${{ github.actor }}
+          # registry-password: ${{ secrets.GITHUB_TOKEN }} # 扫本地镜像，不需要登录
+      - name: Upload Trivy scan results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+
+
+  push-docker-image:
+    if: github.event_name != 'pull_request'
+    needs: build-docker-image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4 
+      - name: Login ghcr
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build and push docker image
         uses: docker/build-push-action@v6
         with:
           context: ./app
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.metadata.outputs.tags }}
-          labels: ${{ steps.metadata.outputs.labels }}
+          push: true
+          tags: ${{ needs.build-docker-image.outputs.tags }}
+          labels: ${{ needs.build-docker-image.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
 
