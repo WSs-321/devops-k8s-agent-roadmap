@@ -25,8 +25,15 @@ jobs:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     outputs:
-      tags: ${{ steps.metadata.outputs.tags }}
-      labels: ${{ steps.metadata.outputs.labels }}
+      img_name: ${{steps.image.outputs.name}}
+      img_tags: ${{ steps.metadata.outputs.tags }}
+      img_labels: ${{ steps.metadata.outputs.labels }}
+      img_digest: ${{ steps.build-docker-image.outputs.digest }}
+      trivy_total: ${{ steps.trivy.outputs.total }}
+      trivy_critical: ${{ steps.trivy.outputs.critical }}
+      trivy_high: ${{ steps.trivy.outputs.high }}
+      trivy_status: ${{ steps.trivy.outputs.status }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4 
@@ -68,7 +75,7 @@ jobs:
 
       - name: Trivy scan
         id: trivy
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ steps.image.outputs.name }}:${{ steps.metadata.outputs.version }}
           format: sarif
@@ -104,13 +111,34 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build and push docker image
+        id: push
         uses: docker/build-push-action@v6
         with:
           context: ./app
           push: true
-          tags: ${{ needs.build-docker-image.outputs.tags }}
-          labels: ${{ needs.build-docker-image.outputs.labels }}
+          tags: ${{ needs.build-docker-image.outputs.img_tags }}
+          labels: ${{ needs.build-docker-image.outputs.img_labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: output summary
+        run: |
+          LABELS_FORMATTED=$(echo ${{ needs.build-docker-image.outputs.img_labels }} | sed 's/,/\\n/g')
+          cat >> $GITHUB_STEP_SUMMARY <<-'EOF'
+          ## Docker Image Summary
+          | Key | Value |
+          | --------- | ---- |
+          | Image Name | ${{ needs.build-docker-image.outputs.img_name }} |
+          | Tags | ${{ needs.build-docker-image.outputs.img_tags }} |
+          | Labels | ${{ LABELS_FORMATTED }} |
+          | Digest | ${{ steps.push.outputs.digest }} |
+
+          ## Trivy Scan Results
+          - **Total vulnerabilities**: ${{ needs.build-docker-image.outputs.trivy_total }}
+          - **Critical vulnerabilities**: ${{ needs.build-docker-image.outputs.trivy_critical }}
+          - **High vulnerabilities**: ${{ needs.build-docker-image.outputs.trivy_high }}
+          - **Status**: ${{ needs.build-docker-image.outputs.trivy_status }}
+          EOF
+
 
 
