@@ -123,10 +123,10 @@ jobs:
 
       - name: output summary
         env:
-          TAGS_LABELS: ${{ needs.build-docker-image.outputs.img_tags }}
+          IMG_TAGS: ${{ needs.build-docker-image.outputs.img_tags }}
           IMG_LABELS: ${{ needs.build-docker-image.outputs.img_labels }}
         run: |
-          TAGS_FORMATTED=$(echo "$TAGS_LABELS" | sed ':a;N;$!ba;s/\n/<br>/g')  
+          TAGS_FORMATTED=$(echo "$IMG_TAGS" | sed ':a;N;$!ba;s/\n/<br>/g')
           LABELS_FORMATTED=$(echo "$IMG_LABELS" | sed ':a;N;$!ba;s/\n/<br>/g')
           cat >> $GITHUB_STEP_SUMMARY <<EOF
           ## Docker Image Summary
