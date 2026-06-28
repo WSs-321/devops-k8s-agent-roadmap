@@ -86,48 +86,21 @@ jobs:
           severity: "CRITICAL,HIGH"
           timeout: 10m
 
-      - name: Debug sarif
-        if: always() && hashFiles('trivy-results.sarif') != ''
-        run: |
-          echo "=== sarif top keys ==="
-          jq 'keys' trivy-results.sarif
-          echo "=== runs[0] keys ==="
-          jq '.runs[0] | keys' trivy-results.sarif
-          echo "=== results count ==="
-          jq '.runs[0].results | length' trivy-results.sarif
-          echo "=== results[0] ==="
-          jq '.runs[0].results[0]' trivy-results.sarif
-          echo "=== tool.driver keys ==="
-          jq '.runs[0].tool.driver | keys' trivy-results.sarif
-          echo "=== rules count ==="
-          jq '.runs[0].tool.driver.rules | length' trivy-results.sarif
-          echo "=== rules[0] ==="
-          jq '.runs[0].tool.driver.rules[0]' trivy-results.sarif
-
       - name: parse Trivy results
         if: always() && hashFiles('trivy-results.sarif') != ''
         id: parse-trivy
         run: |
           SARIF="trivy-results.sarif"
           TOTAL=$(jq '.runs[0].results | length' "$SARIF")
-          # CRITICAL=$(jq '[.runs[0].results[] | select(.level == "error")] | length' "$SARIF")
-          # HIGH="$CRITICAL"
           CRITICAL=$(jq '
-            .runs[0].tool.driver.rules as $rules
-            | [.runs[0].results[]
-              | . as $r
-              | (([$rules[] | select(.id == $r.ruleId)] | .[0]) // $r) as $src
-              | select($src.properties["security-severity"] == "CRITICAL")
-              ] | length
+            [.runs[0].results[]
+              | select(.message.text | test("Severity: CRITICAL"))
+            ] | length
           ' "$SARIF")
-
           HIGH=$(jq '
-            .runs[0].tool.driver.rules as $rules
-            | [.runs[0].results[]
-              | . as $r
-              | (([$rules[] | select(.id == $r.ruleId)] | .[0]) // $r) as $src
-              | select($src.properties["security-severity"] == "HIGH")
-              ] | length
+            [.runs[0].results[]
+              | select(.message.text | test("Severity: HIGH"))
+            ] | length
           ' "$SARIF")
           STATUS="pass"
           if [ "$TOTAL" != "0" ]; then
