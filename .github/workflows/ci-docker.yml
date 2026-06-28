@@ -95,16 +95,21 @@ jobs:
           # CRITICAL=$(jq '[.runs[0].results[] | select(.level == "error")] | length' "$SARIF")
           # HIGH="$CRITICAL"
           CRITICAL=$(jq '
-            [.runs[0].results[] as $r
-             | .runs[0].tool.driver.rules[$r.ruleIndex]
-             | select(.properties["security-severity"] == "CRITICAL")
-            ] | length
+            .runs[0].tool.driver.rules as $rules
+            | [.runs[0].results[]
+              | . as $r
+              | (([$rules[] | select(.id == $r.ruleId)] | .[0]) // $r) as $src
+              | select($src.properties["security-severity"] == "CRITICAL")
+              ] | length
           ' "$SARIF")
+
           HIGH=$(jq '
-            [.runs[0].results[] as $r
-             | .runs[0].tool.driver.rules[$r.ruleIndex]
-             | select(.properties["security-severity"] == "HIGH")
-            ] | length
+            .runs[0].tool.driver.rules as $rules
+            | [.runs[0].results[]
+              | . as $r
+              | (([$rules[] | select(.id == $r.ruleId)] | .[0]) // $r) as $src
+              | select($src.properties["security-severity"] == "HIGH")
+              ] | length
           ' "$SARIF")
           STATUS="pass"
           if [ "$TOTAL" != "0" ]; then
