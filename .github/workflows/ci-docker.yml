@@ -92,8 +92,20 @@ jobs:
         run: |
           SARIF="trivy-results.sarif"
           TOTAL=$(jq '.runs[0].results | length' "$SARIF")
-          CRITICAL=$(jq '[.runs[0].results[] | select(.level == "error")] | length' "$SARIF")
-          HIGH="$CRITICAL"
+          # CRITICAL=$(jq '[.runs[0].results[] | select(.level == "error")] | length' "$SARIF")
+          # HIGH="$CRITICAL"
+          CRITICAL=$(jq '
+            [.runs[0].results[] as $r
+             | .runs[0].tool.driver.rules[$r.ruleIndex]
+             | select(.properties["security-severity"] == "CRITICAL")
+            ] | length
+          ' "$SARIF")
+          HIGH=$(jq '
+            [.runs[0].results[] as $r
+             | .runs[0].tool.driver.rules[$r.ruleIndex]
+             | select(.properties["security-severity"] == "HIGH")
+            ] | length
+          ' "$SARIF")
           STATUS="pass"
           if [ "$TOTAL" != "0" ]; then
             STATUS="warn"
