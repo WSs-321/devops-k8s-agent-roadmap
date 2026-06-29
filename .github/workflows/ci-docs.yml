@@ -1,4 +1,4 @@
-name: Hello workflows
+name: docs CI
 
 on:
   push:
