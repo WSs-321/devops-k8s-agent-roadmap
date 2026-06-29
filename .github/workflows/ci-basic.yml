@@ -1,4 +1,4 @@
-name: Hello workflows
+name: basic CI test
 
 on:
   push:
