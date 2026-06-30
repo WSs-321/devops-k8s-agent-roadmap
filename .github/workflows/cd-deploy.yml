@@ -1,0 +1,97 @@
+name: CD-DEPLOY
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "app/**"
+      - "scripts/**"
+      - ".github/workflows/cd-deploy.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "app/**"
+      - "scripts/**"
+      - ".github/workflows/cd-deploy.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+
+jobs:
+  deploy-dev:
+    runs-on: ubuntu-latest
+    environment: 
+      name: dev
+      url: https://dev.example.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Deploy to dev
+        run: |
+          echo "Deploying to dev environment..."
+          ./scripts/deploy_docker.sh
+          echo "Dev deploy done"
+        env: 
+          DEPLOY_ENV: dev
+          DEPLOY_TARGET: ssh
+          APP_NAME: roadmap
+          IMAGE: ghcr.io/${{ github.repository }}
+          IMAGE_TAG: ${{ github.sha }}
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST_DEV }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER_DEV }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY_DEV }}
+          HEALTH_CHECK_URL: ${{ vars.HEALTH_CHECK_URL_DEV }}
+  
+  deploy-staging:
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    environment: 
+      name: staging
+      url: https://staging.example.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Deploy to staging
+        run: |
+          echo "Deploying to staging environment..."
+          ./scripts/deploy_docker.sh
+          echo "Deploying app version ${{ github.sha }}"
+        env: 
+          DEPLOY_ENV: staging
+          DEPLOY_TARGET: ssh
+          APP_NAME: roadmap
+          IMAGE: ghcr.io/${{ github.repository }}
+          IMAGE_TAG: ${{ github.sha }}
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST_STAGING }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER_STAGING }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY_STAGING }}
+          HEALTH_CHECK_URL: ${{ vars.HEALTH_CHECK_URL_STAGING }}
+  
+  deploy-prod:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment: 
+      name: production
+      url: https://prod.example.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Deploy to production
+        run: |
+          echo "Deploying to production environment..."
+          ./scripts/deploy_docker.sh
+          echo "Prod deploy done"
+        env: 
+          DEPLOY_ENV: prod
+          DEPLOY_TARGET: ssh
+          APP_NAME: roadmap
+          IMAGE: ghcr.io/${{ github.repository }}
+          IMAGE_TAG: ${{ github.sha }}
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST_PROD }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER_PROD }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY_PROD }}
+          HEALTH_CHECK_URL: ${{ vars.HEALTH_CHECK_URL_PROD }}
