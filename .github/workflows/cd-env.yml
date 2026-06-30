@@ -1,0 +1,66 @@
+name: CD-ENV
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "app/**"
+      - ".github/workflows/cd-env.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "app/**"
+      - ".github/workflows/cd-env.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+
+jobs:
+  deploy-dev:
+    runs-on: ubuntu-latest
+    environment: 
+      name: dev
+      url: https://dev.example.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Deploy to dev
+        run: |
+          echo "Deploying to dev environment..."
+          echo "Image: ghcr.io/${{ github.repository }}:${{ github.sha }}"
+          echo "Dev deploy done"
+  
+  deploy-staging:
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    environment: 
+      name: staging
+      url: https://staging.example.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Deploy to staging
+        run: |
+          echo "Deploying to staging environment..."
+          echo "Image: ghcr.io/${{ github.repository }}:${{ github.sha }}"
+          echo "Deploying app version ${{ github.sha }}"
+
+  deploy-prod:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment: 
+      name: production
+      url: https://prod.example.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Deploy to production
+        run: |
+          echo "Deploying to production environment..."
+          echo "Image: ghcr.io/${{ github.repository }}:${{ github.sha }}"
+          echo "Prod deploy done"
+      
