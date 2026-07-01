@@ -30,7 +30,11 @@ function print_plan() {
 function health_check() {
   echo "Health check..."
   echo "-----------------"
-  [ -z "${HEALTH_CHECK_URL-}" ] && { echo "HEALTH_CHECK_URL is not set" ; return 0 ; }
+  if [ -z "${HEALTH_CHECK_URL-}" ]; then
+    echo "HEALTH_CHECK_URL is not set"
+    return 0
+  fi
+  echo "Health check URL: $HEALTH_CHECK_URL"
 }
 
 function deploy_ssh() {
