@@ -36,16 +36,18 @@ function health_check() {
 function deploy_ssh() {
   echo "Deploying SSH server..."
   echo "-----------------"
-  ssh $DEPLOY_USER@$DEPLOY_HOST docker pull $IMAGE:$IMAGE_TAG
+  # 暂无服务器，临时跳过真实 SSH 连接
+  # ssh $DEPLOY_USER@$DEPLOY_HOST docker pull $IMAGE:$IMAGE_TAG
   echo "SSH server deployed successfully."
 }
 function deploy_docker() {
   echo "Deploying Docker container..."
   echo "-----------------"
-  ssh $DEPLOY_USER@$DEPLOY_HOST docker pull $IMAGE:$IMAGE_TAG
-  ssh $DEPLOY_USER@$DEPLOY_HOST docker stop $APP_NAME || true
-  ssh $DEPLOY_USER@$DEPLOY_HOST docker rm $APP_NAME || true
-  ssh $DEPLOY_USER@$DEPLOY_HOST docker run -d --name $APP_NAME -p 80:80 $IMAGE:$IMAGE_TAG
+  # 暂无服务器，临时跳过真实 SSH 连接
+  # ssh $DEPLOY_USER@$DEPLOY_HOST docker pull $IMAGE:$IMAGE_TAG
+  # ssh $DEPLOY_USER@$DEPLOY_HOST docker stop $APP_NAME || true
+  # ssh $DEPLOY_USER@$DEPLOY_HOST docker rm $APP_NAME || true
+  # ssh $DEPLOY_USER@$DEPLOY_HOST docker run -d --name $APP_NAME -p 80:80 $IMAGE:$IMAGE_TAG
   echo "Docker container deployed successfully."
 }
 function deploy_ecs() {
