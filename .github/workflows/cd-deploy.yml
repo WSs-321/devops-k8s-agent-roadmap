@@ -33,7 +33,7 @@ jobs:
       - name: Deploy to dev
         run: |
           echo "Deploying to dev environment..."
-          ./scripts/deploy_docker.sh
+          ./scripts/deploy.sh
           echo "Dev deploy done"
         env: 
           DEPLOY_ENV: dev
@@ -58,7 +58,7 @@ jobs:
       - name: Deploy to staging
         run: |
           echo "Deploying to staging environment..."
-          ./scripts/deploy_docker.sh
+          ./scripts/deploy.sh
           echo "Deploying app version ${{ github.sha }}"
         env: 
           DEPLOY_ENV: staging
@@ -83,7 +83,7 @@ jobs:
       - name: Deploy to production
         run: |
           echo "Deploying to production environment..."
-          ./scripts/deploy_docker.sh
+          ./scripts/deploy.sh
           echo "Prod deploy done"
         env: 
           DEPLOY_ENV: prod

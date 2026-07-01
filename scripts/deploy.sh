@@ -43,6 +43,8 @@ function deploy_docker() {
   echo "Deploying Docker container..."
   echo "-----------------"
   ssh $DEPLOY_USER@$DEPLOY_HOST docker pull $IMAGE:$IMAGE_TAG
+  ssh $DEPLOY_USER@$DEPLOY_HOST docker stop $APP_NAME || true
+  ssh $DEPLOY_USER@$DEPLOY_HOST docker rm $APP_NAME || true
   ssh $DEPLOY_USER@$DEPLOY_HOST docker run -d --name $APP_NAME -p 80:80 $IMAGE:$IMAGE_TAG
   echo "Docker container deployed successfully."
 }
