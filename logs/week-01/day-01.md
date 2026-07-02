@@ -26,4 +26,3 @@ Day: Monday
 ## Commit
 
 - create repo devops-k8s-agent-roadmap
-

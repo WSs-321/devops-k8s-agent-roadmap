@@ -517,13 +517,13 @@ Docker 不会自动把容器迁移到别的机器，因为单机 Docker 没有�
 
 常见处理方式：
 
-1. 调大内存限制：
+- 调大内存限制：
 
 ```bash
 docker run -m 1g my-app
 ```
 
-2. 配合重启策略：
+- 配合重启策略：
 
 ```bash
 docker run -d \
@@ -532,7 +532,7 @@ docker run -d \
   my-app
 ```
 
-3. 检查是否内存泄漏：
+- 检查是否内存泄漏：
 
 ```bash
 docker stats

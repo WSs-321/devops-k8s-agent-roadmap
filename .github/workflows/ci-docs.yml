@@ -2,18 +2,17 @@ name: docs CI
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
     paths:
-      - "docs/**"
-      - ".github/workflows/ci-docs.yml"
+      - 'docs/**'
+      - '.github/workflows/ci-docs.yml'
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
     paths:
-      - "docs/**"
-      - ".github/workflows/ci-docs.yml"
-
-permissions:
-  contents: read
+      - 'docs/**'
+      - '*.md'
+      - 'logs/**/*.md'
+      - '.github/workflows/ci-docs.yml'
 
 jobs:
   lintmarkdown:
@@ -27,3 +26,5 @@ jobs:
         with:
           globs: |
             docs/**/*.md
+            *.md
+            logs/**/*.md

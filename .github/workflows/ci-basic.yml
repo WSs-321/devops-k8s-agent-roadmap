@@ -2,12 +2,9 @@ name: basic CI test
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
   pull_request:
-    branches: ["main"]
-
-permissions:
-  contents: read
+    branches: [ "main" ]
 
 jobs:
   Checks:
