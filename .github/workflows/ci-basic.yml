@@ -2,9 +2,12 @@ name: basic CI test
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]  
+    branches: ["main"]
+
+permissions:
+  contents: read
 
 jobs:
   Checks:
@@ -12,7 +15,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      
+
   build:
     runs-on: ubuntu-latest
     steps:
