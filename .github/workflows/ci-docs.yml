@@ -27,5 +27,3 @@ jobs:
         with:
           globs: |
             docs/**/*.md
-            *.md
-            logs/**/*.md
