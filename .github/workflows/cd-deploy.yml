@@ -37,7 +37,7 @@ jobs:
           echo "Dev deploy done"
         env: 
           DEPLOY_ENV: dev
-          DEPLOY_TARGET: ssh
+          DEPLOY_TARGET: compose
           APP_NAME: roadmap
           IMAGE: ghcr.io/${{ github.repository }}
           IMAGE_TAG: ${{ github.sha }}
@@ -63,7 +63,7 @@ jobs:
           echo "Deploying app version ${{ github.sha }}"
         env: 
           DEPLOY_ENV: staging
-          DEPLOY_TARGET: ssh
+          DEPLOY_TARGET: compose
           APP_NAME: roadmap
           IMAGE: ghcr.io/${{ github.repository }}
           IMAGE_TAG: ${{ github.sha }}
@@ -89,7 +89,7 @@ jobs:
           echo "Prod deploy done"
         env: 
           DEPLOY_ENV: prod
-          DEPLOY_TARGET: ssh
+          DEPLOY_TARGET: compose
           APP_NAME: roadmap
           IMAGE: ghcr.io/${{ github.repository }}
           IMAGE_TAG: ${{ github.sha }}
