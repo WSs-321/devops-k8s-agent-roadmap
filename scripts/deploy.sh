@@ -79,6 +79,14 @@ function deploy_docker() {
   run_cmd ssh "${DEPLOY_USER-}@${DEPLOY_HOST-}" docker run -d --name "$APP_NAME" -p 80:80 "$IMAGE:$IMAGE_TAG"
   echo "Docker container deployed successfully."
 }
+function deploy_compose() {
+  echo "Deploying with Docker Compose..."
+  echo "-----------------"
+  run_cmd scp docker-compose.yml "${DEPLOY_USER-}@${DEPLOY_HOST-}:docker-compose.yml"
+  run_cmd ssh "${DEPLOY_USER-}@${DEPLOY_HOST-}" IMAGE="$IMAGE" IMAGE_TAG="$IMAGE_TAG" docker compose pull
+  run_cmd ssh "${DEPLOY_USER-}@${DEPLOY_HOST-}" IMAGE="$IMAGE" IMAGE_TAG="$IMAGE_TAG" docker compose up -d
+  echo "Docker Compose deployed successfully."
+}
 function deploy_ecs() {
   echo "Deploying ECS service..."
   echo "-----------------"
@@ -107,6 +115,9 @@ main() {
       ;;
     docker)
       deploy_docker
+      ;;
+    compose)
+      deploy_compose
       ;;
     ecs)
       deploy_ecs
