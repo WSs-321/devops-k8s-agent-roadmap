@@ -37,7 +37,7 @@ jobs:
           echo "Dev deploy done"
         env: 
           DEPLOY_ENV: dev
-          DEPLOY_TARGET: ssh
+          DEPLOY_TARGET: compose
           APP_NAME: roadmap
           IMAGE: ghcr.io/${{ github.repository }}
           IMAGE_TAG: ${{ github.sha }}
@@ -45,6 +45,7 @@ jobs:
           DEPLOY_USER: ${{ vars.DEPLOY_USER_DEV }}
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY_DEV }}
           HEALTH_CHECK_URL: ${{ vars.HEALTH_CHECK_URL_DEV }}
+          DRY_RUN: "true"
   
   deploy-staging:
     needs: deploy-dev
@@ -62,7 +63,7 @@ jobs:
           echo "Deploying app version ${{ github.sha }}"
         env: 
           DEPLOY_ENV: staging
-          DEPLOY_TARGET: ssh
+          DEPLOY_TARGET: compose
           APP_NAME: roadmap
           IMAGE: ghcr.io/${{ github.repository }}
           IMAGE_TAG: ${{ github.sha }}
@@ -70,6 +71,7 @@ jobs:
           DEPLOY_USER: ${{ vars.DEPLOY_USER_STAGING }}
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY_STAGING }}
           HEALTH_CHECK_URL: ${{ vars.HEALTH_CHECK_URL_STAGING }}
+          DRY_RUN: "true"
   
   deploy-prod:
     needs: deploy-staging
@@ -87,7 +89,7 @@ jobs:
           echo "Prod deploy done"
         env: 
           DEPLOY_ENV: prod
-          DEPLOY_TARGET: ssh
+          DEPLOY_TARGET: compose
           APP_NAME: roadmap
           IMAGE: ghcr.io/${{ github.repository }}
           IMAGE_TAG: ${{ github.sha }}
@@ -95,3 +97,4 @@ jobs:
           DEPLOY_USER: ${{ vars.DEPLOY_USER_PROD }}
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY_PROD }}
           HEALTH_CHECK_URL: ${{ vars.HEALTH_CHECK_URL_PROD }}
+          DRY_RUN: "true"

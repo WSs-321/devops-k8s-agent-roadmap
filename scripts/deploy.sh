@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# DRY_RUN=true 时只打印命令不真正执行，用于无服务器时演练整条流程
+function run_cmd() {
+  if [ "${DRY_RUN-}" = "true" ]; then
+    echo "[DRY_RUN] $*"
+  else
+    "$@"
+  fi
+}
+
 function validate_variables() {
   if [ -z "${DEPLOY_ENV-}" ]; then
     echo "DEPLOY_ENV is not set" && exit 10
@@ -30,29 +39,53 @@ function print_plan() {
 function health_check() {
   echo "Health check..."
   echo "-----------------"
-  if [ -z "${HEALTH_CHECK_URL-}" ]; then
-    echo "HEALTH_CHECK_URL is not set"
+  if [ "${DRY_RUN-}" = "true" ]; then
+    echo "[DRY_RUN] skip health check: ${HEALTH_CHECK_URL:-<unset>}"
     return 0
   fi
-  echo "Health check URL: $HEALTH_CHECK_URL"
+  if [ -z "${HEALTH_CHECK_URL-}" ]; then
+    echo "HEALTH_CHECK_URL is not set, skip"
+    return 0
+  fi
+
+  local retries=5
+  local i=1
+  while [ "$i" -le "$retries" ]; do
+    if curl -fsS "$HEALTH_CHECK_URL" > /dev/null 2>&1; then
+      echo "Health check passed: $HEALTH_CHECK_URL"
+      return 0
+    fi
+    echo "Attempt $i/$retries failed, retrying..."
+    sleep 3
+    i=$((i + 1))
+  done
+
+  echo "Health check failed after $retries attempts" >&2
+  return 1
 }
 
 function deploy_ssh() {
   echo "Deploying SSH server..."
   echo "-----------------"
-  # 暂无服务器，临时跳过真实 SSH 连接
-  # ssh $DEPLOY_USER@$DEPLOY_HOST docker pull $IMAGE:$IMAGE_TAG
+  run_cmd ssh "${DEPLOY_USER-}@${DEPLOY_HOST-}" docker pull "$IMAGE:$IMAGE_TAG"
   echo "SSH server deployed successfully."
 }
 function deploy_docker() {
   echo "Deploying Docker container..."
   echo "-----------------"
-  # 暂无服务器，临时跳过真实 SSH 连接
-  # ssh $DEPLOY_USER@$DEPLOY_HOST docker pull $IMAGE:$IMAGE_TAG
-  # ssh $DEPLOY_USER@$DEPLOY_HOST docker stop $APP_NAME || true
-  # ssh $DEPLOY_USER@$DEPLOY_HOST docker rm $APP_NAME || true
-  # ssh $DEPLOY_USER@$DEPLOY_HOST docker run -d --name $APP_NAME -p 80:80 $IMAGE:$IMAGE_TAG
+  run_cmd ssh "${DEPLOY_USER-}@${DEPLOY_HOST-}" docker pull "$IMAGE:$IMAGE_TAG"
+  run_cmd ssh "${DEPLOY_USER-}@${DEPLOY_HOST-}" docker stop "$APP_NAME" || true
+  run_cmd ssh "${DEPLOY_USER-}@${DEPLOY_HOST-}" docker rm "$APP_NAME" || true
+  run_cmd ssh "${DEPLOY_USER-}@${DEPLOY_HOST-}" docker run -d --name "$APP_NAME" -p 80:80 "$IMAGE:$IMAGE_TAG"
   echo "Docker container deployed successfully."
+}
+function deploy_compose() {
+  echo "Deploying with Docker Compose..."
+  echo "-----------------"
+  run_cmd scp docker-compose.yml "${DEPLOY_USER-}@${DEPLOY_HOST-}:docker-compose.yml"
+  run_cmd ssh "${DEPLOY_USER-}@${DEPLOY_HOST-}" IMAGE="$IMAGE" IMAGE_TAG="$IMAGE_TAG" docker compose pull
+  run_cmd ssh "${DEPLOY_USER-}@${DEPLOY_HOST-}" IMAGE="$IMAGE" IMAGE_TAG="$IMAGE_TAG" docker compose up -d
+  echo "Docker Compose deployed successfully."
 }
 function deploy_ecs() {
   echo "Deploying ECS service..."
@@ -82,6 +115,9 @@ main() {
       ;;
     docker)
       deploy_docker
+      ;;
+    compose)
+      deploy_compose
       ;;
     ecs)
       deploy_ecs

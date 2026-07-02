@@ -1,0 +1,16 @@
+# 远程部署用 Compose 文件：直接拉取 GHCR 镜像，不在服务器上构建
+# 由 scripts/deploy.sh 的 deploy_compose 通过 IMAGE / IMAGE_TAG 环境变量注入镜像地址
+services:
+  app:
+    image: ${IMAGE}:${IMAGE_TAG}
+    ports:
+      - "80:3000"
+    environment:
+      - PORT=3000
+      - GREETING=Hello Compose
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
