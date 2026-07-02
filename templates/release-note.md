@@ -2,12 +2,13 @@
 
 Version:
 Date:
-Commit:
+Commit Range:
 Image:
 
 ## Changes
 
--
+<!-- AUTO_CHANGES_START -->
+<!-- AUTO_CHANGES_END -->
 
 ## Risk
 
