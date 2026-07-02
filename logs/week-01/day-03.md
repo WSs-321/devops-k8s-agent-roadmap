@@ -7,7 +7,6 @@ Day: Wednesday
 
 - 为你的示例技术栈添加 setup、install、test 步骤
 
-
 ## 实际完成
 
 - 为你的示例技术栈添加 setup、install、test 步骤，以node.js为例

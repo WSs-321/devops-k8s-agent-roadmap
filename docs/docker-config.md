@@ -157,10 +157,10 @@ spec:
 
 ## kube_config.key 属于哪种？
 
-```
-kube_config.key = 一份敏感配置文件（数据本身）
+```text
+kube_config.key = 一份敏感配置文件（数据本身，不是服务）
 配置外置方式 = 文件挂载（运行时挂到 ~/.kube/config）
-密钥管理服务 = GitHub Secrets / Vault / K8s Secret（存放它的仓库）
+密钥管理服务 = GitHub Secrets / Vault / K8s Secret（用于存放、分发和轮换它）
 
 kube_config.key 不是密钥管理服务，
 但它应该被密钥管理服务管理。
@@ -218,7 +218,7 @@ API_KEY=
 
 ## 一句话总结
 
-```
+```text
 配置外置 = 配置和代码分离
 环境变量是最简单的实现
 "一份镜像，多种环境"是核心目标

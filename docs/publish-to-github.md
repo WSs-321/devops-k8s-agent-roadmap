@@ -15,9 +15,9 @@ D:\tmp\devops-k8s-agent-roadmap
 devops-k8s-agent-roadmap
 ```
 
-3. 建议先选择 Private。
-4. 不要勾选自动生成 README、`.gitignore` 或 license，因为本地仓库已经有这些内容。
-5. 创建后复制仓库地址。
+1. 建议先选择 Private。
+1. 不要勾选自动生成 README、`.gitignore` 或 license，因为本地仓库已经有这些内容。
+1. 创建后复制仓库地址。
 
 如果使用 HTTPS 地址：
 
@@ -68,4 +68,3 @@ Project 01: complete CI baseline
 ## 推荐仓库可见性
 
 早期建议 Private，因为里面可能包含学习记录、失败日志、配置草稿。等内容成熟后，可以再改成 Public，用作个人作品集。
-

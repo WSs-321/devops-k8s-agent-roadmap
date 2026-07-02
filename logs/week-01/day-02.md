@@ -6,8 +6,8 @@ Day: Tuesday
 ## 今日目标
 
 - GitHub Actions 概念 | 学习 workflow、job、step、runner、event；手写第一个 hello workflow
-    - 根据https://github.com/Jsheng2019/Start_Workflow.git的demo，学习 workflow、job、step、runner、event、action、composite 的概念
-    - 手写第一个 hello workflow
+  - 根据 <https://github.com/Jsheng2019/Start_Workflow.git> 的 demo，学习 workflow、job、step、runner、event、action、composite 的概念
+  - 手写第一个 hello workflow
 
 ## 实际完成
 
