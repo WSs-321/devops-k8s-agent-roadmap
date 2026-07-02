@@ -7,8 +7,21 @@ function greet(name = "roadmap") {
 }
 
 if (require.main === module) {
-  console.log(greet("devops-k8s-agent-roadmap"));
-  console.log(`1 + 2 = ${add(1, 2)}`);
+  const http = require("node:http");
+  const port = process.env.PORT || 3000;
+  const server = http.createServer((req, res) => {
+    if (req.url === "/health") {
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "text/plain");
+      res.end("OK");
+      return;
+    }
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end(greet(process.env.GREETING));
+  });
+  server.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}/`);
+  });
 }
 
 module.exports = { add, greet: (name = process.env.GREETING) => greet(name) };

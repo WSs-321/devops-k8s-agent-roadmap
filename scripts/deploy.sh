@@ -31,10 +31,24 @@ function health_check() {
   echo "Health check..."
   echo "-----------------"
   if [ -z "${HEALTH_CHECK_URL-}" ]; then
-    echo "HEALTH_CHECK_URL is not set"
+    echo "HEALTH_CHECK_URL is not set, skip"
     return 0
   fi
-  echo "Health check URL: $HEALTH_CHECK_URL"
+
+  local retries=5
+  local i=1
+  while [ "$i" -le "$retries" ]; do
+    if curl -fsS "$HEALTH_CHECK_URL" > /dev/null 2>&1; then
+      echo "Health check passed: $HEALTH_CHECK_URL"
+      return 0
+    fi
+    echo "Attempt $i/$retries failed, retrying..."
+    sleep 3
+    i=$((i + 1))
+  done
+
+  echo "Health check failed after $retries attempts" >&2
+  return 1
 }
 
 function deploy_ssh() {
@@ -52,6 +66,7 @@ function deploy_docker() {
   # ssh $DEPLOY_USER@$DEPLOY_HOST docker stop $APP_NAME || true
   # ssh $DEPLOY_USER@$DEPLOY_HOST docker rm $APP_NAME || true
   # ssh $DEPLOY_USER@$DEPLOY_HOST docker run -d --name $APP_NAME -p 80:80 $IMAGE:$IMAGE_TAG
+  
   echo "Docker container deployed successfully."
 }
 function deploy_ecs() {
