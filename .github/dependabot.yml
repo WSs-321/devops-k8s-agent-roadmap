@@ -1,0 +1,51 @@
+# 配置 Dependabot 自动更新依赖项
+version: 2
+
+.x-common: &common
+  schedule:
+    interval: "weekly"
+    day: "monday"
+  open-pull-requests-limit: 3
+
+updates:
+  - package-ecosystem: "npm"
+    directory: "/app"
+    <<: *common
+    labels:
+      - "dependencies"
+      - "npm"
+    groups:
+      npm:
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
+          - "minor"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    <<: *common
+    labels:
+      - "dependencies"
+      - "github-actions"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
+          - "minor"
+
+  - package-ecosystem: "docker"
+    directory: "/app"
+    <<: *common
+    labels:
+      - "dependencies"
+      - "docker"
+    groups:
+      docker:
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
+          - "minor"
