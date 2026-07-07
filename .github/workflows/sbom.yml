@@ -1,0 +1,32 @@
+name: generate SBOM
+
+on:
+  workflow_run:                          # 等镜像推送完再跑
+    workflows: ["docker CI"]
+    types: [completed]
+  
+jobs:
+  sbom:
+    name: SBOM
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set lowercase image name
+        id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+
+      - name: Generate SBOM with Syft
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ steps.image.outputs.name }}:latest
+          format: spdx-json
+          output-file: sbom.spdx.json
+        
+      - name: Upload SBOM as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.spdx.json
+
