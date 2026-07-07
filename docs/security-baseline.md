@@ -37,7 +37,7 @@
 
 每个 workflow 显式声明 `permissions`，只给必要权限，未声明项默认 `none`。
 
-### 各 workflow 权限配置
+### 权限配置总览
 
 | Workflow | `contents` | `packages` | `security-events` | 说明 |
 | --- | --- | --- | --- | --- |
@@ -51,7 +51,7 @@
 | `cd-deploy.yml` | read | - | - | 部署 |
 | `release.yml` | write | - | - | 创建 Release |
 
-### 检查清单
+### 权限最小化检查清单
 
 - [ ] 每个 workflow 都显式声明 `permissions`
 - [ ] 没有 workflow 用 `write-all`
@@ -61,7 +61,7 @@
 
 ## 2. Dependabot（Day 37）
 
-### 配置
+### Dependabot 配置
 
 `.github/dependabot.yml` 配置 3 个 ecosystem：
 
@@ -77,7 +77,7 @@
 - **major 单独**：需人工审查，防止 breaking change
 - **security updates**：GitHub 自动开启，发现已知漏洞立即开 PR
 
-### 检查清单
+### Dependabot 检查清单
 
 - [ ] 已配置所有包管理器对应的 ecosystem
 - [ ] open-pull-requests-limit 合理（建议 ≤10）
@@ -86,7 +86,7 @@
 
 ## 3. CodeQL（Day 38）
 
-### 配置
+### CodeQL 配置
 
 `.github/workflows/codeql.yml`：
 
@@ -107,7 +107,7 @@
 - `analyze` step 内置上传，不需要手动 `upload-sarif`
 - 定时扫描的意义：CodeQL 规则持续更新，旧代码也能发现新漏洞
 
-### 检查清单
+### CodeQL 检查清单
 
 - [ ] CodeQL workflow 存在且能正常运行
 - [ ] `security-events: write` 权限已配置
@@ -158,7 +158,7 @@ revoke（立即撤销 token）
   → notify（通知安全团队/相关方）
 ```
 
-### 检查清单
+### Secret 安全检查清单
 
 - [ ] 每个 custom token 都有明确用途和最小 scope
 - [ ] 生产密钥使用 environment secret + 审批
@@ -194,7 +194,7 @@ revoke（立即撤销 token）
 | 独立 vs 合并 | **独立 workflow** | 关注点分离，不污染 docker workflow 拓扑 |
 | Registry Pull vs 本地 tar | **Registry Pull** | 每次构建后镜像已在 registry，直接拉取即可 |
 
-### 检查清单
+### SBOM 检查清单
 
 - [ ] 每次构建镜像后自动生成 SBOM
 - [ ] SBOM 作为 release artifact 发布
@@ -237,7 +237,7 @@ Branch: main
 | workflow_run | PR 阶段不触发，不能作为 required check |
 | 矩阵 job | 格式 `name (version)`，如 `ci (18.x)` |
 
-### 检查清单
+### 分支保护检查清单
 
 - [ ] main 分支已配置上述保护规则
 - [ ] 所有 required status checks 都能正常通过
