@@ -85,6 +85,38 @@ kubectl rollout undo deploy my-app
 kubectl exec -it my-app -- sh
 ```
 
+### K8s 学习环境方案
+
+| 方案 | 成本 | 机器要求 | 适合阶段 | 推荐度 |
+| --- | --- | --- | --- | --- |
+| killercoda.com | 免费 | 无（浏览器） | 第一天体验 | ⭐⭐ |
+| Minikube | 免费 | 本地 4GB+ | 学习阶段 | ⭐⭐⭐⭐⭐ |
+| Kind | 免费 | 本地 4GB+ | CI/自动化测试 | ⭐⭐⭐⭐ |
+| Docker Desktop | 免费 | 本地已装 | 已有 Docker 用户 | ⭐⭐⭐⭐ |
+| 阿里云 ACK | 收费 | 云服务器 | Week 8 实战 | ⭐⭐⭐ |
+
+**killercoda.com**：浏览器里直接给一个 K8s 集群 + 终端，免费账号每次 1 小时，零门槛体验 kubectl。
+
+**Minikube**：本地单节点 K8s，Windows 支持，安装简单：
+
+```powershell
+winget install Kubernetes.minikube
+minikube start
+kubectl get nodes
+```
+
+**Docker Desktop 自带 K8s**：最省事，Settings -> Kubernetes -> Enable Kubernetes，一键开启。
+
+**Kind（Kubernetes in Docker）**：用 Docker 容器模拟 K8s 节点，轻量，可跑多节点，GitHub Actions CI 测试常用。
+
+**推荐路线**：
+
+```text
+第 1 步（今天）：killercoda.com 浏览器体验 kubectl
+第 2 步（Day 44-48）：本地 Docker Desktop 开启 K8s 或 Minikube
+第 3 步（Week 8）：阿里云 ACK 真实集群实战
+```
+
 ## 遇到的问题
 
 - 无
