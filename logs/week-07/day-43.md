@@ -57,6 +57,21 @@ ConfigMap / Secret（配置注入）
 - 用途：环境隔离、资源限额、权限控制、DNS 前缀
 - 内置：default / kube-system / kube-public / kube-node-lease
 
+### 完整链路总结
+
+```text
+外部用户 -> Ingress（域名路由）-> Service（稳定IP+负载均衡）-> Pod x N（由 Deployment 维持）
+                                                              ↑
+                                              ConfigMap/Secret 注入配置
+```
+
+一句话：**Ingress 管入口，Service 管寻址，Deployment 管存活，ConfigMap/Secret 管配置**。
+
+- Ingress 不直接连 Pod，因为 Pod IP 会变
+- Ingress 指向 Service，Service 再负载均衡到 Pod
+- Deployment 不是"持久化"，是"声明期望状态"（我要 N 个副本，挂了自动补）
+- Pod 数量可随时 scale 调整，不是固定不变的
+
 ### 与前六周知识的衔接
 
 | 前六周概念 | K8s 对应 |
