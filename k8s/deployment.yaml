@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-roadmap
+  labels:
+    app: devops-roadmap
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: devops-roadmap
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: devops-roadmap
+    spec:
+      containers:
+        - name: app
+          # 学习环境用 nginx（killercoda 拉不了私有 GHCR 镜像）
+          # 真实部署替换为: ghcr.io/wss-321/devops-k8s-agent-roadmap:latest
+          image: nginx
+          ports:
+            - containerPort: 80
+          env:
+            - name: GREETING
+              value: "Hello, K8s!"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
