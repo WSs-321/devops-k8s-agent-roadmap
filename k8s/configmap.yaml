@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  GREETING: "Hello, K8s!"
+  LOG_LEVEL: "info"
+  NODE_ENV: "production"
