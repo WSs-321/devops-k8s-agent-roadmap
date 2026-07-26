@@ -1,0 +1,74 @@
+# Day 49 PV / PVC 演示（简化版）
+# 包含：
+# 1. emptyDir 临时存储（多容器共享）
+# 2. 静态 PV（hostPath 后端，仅演示）
+# 3. PVC 申请存储
+# 4. Pod 挂载 PVC
+# 注意：hostPath 仅用于演示，生产环境请用云盘（EBS/PD/Disk）或分布式存储（Ceph/NFS）
+---
+# Part 1: emptyDir（Pod 生命周期内的临时存储）
+apiVersion: v1
+kind: Pod
+metadata:
+  name: emptydir-demo
+spec:
+  containers:
+  - name: writer
+    image: busybox
+    command: ["sh", "-c", "echo 'shared data' > /cache/data.txt; sleep 3600"]
+    volumeMounts:
+    - name: cache
+      mountPath: /cache
+  - name: reader
+    image: busybox
+    command: ["sh", "-c", "cat /cache/data.txt; sleep 3600"]
+    volumeMounts:
+    - name: cache
+      mountPath: /cache
+  volumes:
+  - name: cache
+    emptyDir: {}
+---
+# Part 2: 静态 PV（hostPath 后端，仅演示）
+# 生产环境用：awsElasticBlockStore / gcePersistentDisk / azureDisk / nfs / csi
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: my-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /mnt/k8s-demo-data
+---
+# Part 3: PVC 申请存储
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi
+---
+# Part 4: Pod 挂载 PVC
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pvc-demo
+spec:
+  containers:
+  - name: app
+    image: busybox
+    command: ["sh", "-c", "echo 'persistent data' > /data/test.txt; sleep 3600"]
+    volumeMounts:
+    - name: data
+      mountPath: /data
+  volumes:
+  - name: data
+    persistentVolumeClaim:
+      claimName: my-pvc
