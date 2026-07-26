@@ -1,0 +1,125 @@
+# K8s 应用清单最小模板
+# 一个应用 = 6 资源合一：Deployment + Service + Ingress + ConfigMap + Secret + Probe（内嵌）
+# 用法：复制此文件 → 替换 my-app → kubectl apply -f app-template.yaml
+# 注意：Secret 的 base64 是占位符，生产请用 kubectl create secret 重新生成
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+  labels:
+    app: my-app
+spec:
+  replicas: 2                                  # 至少 2 个避免单点故障
+  selector:
+    matchLabels:
+      app: my-app
+  strategy:
+    type: RollingUpdate                        # 零宕机滚动更新
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0                        # 不允许有宕机
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: app
+        # dev 环境用 latest，staging/prod 用 commit sha
+        image: ghcr.io/wss-321/devops-k8s-agent-roadmap:latest
+        ports:
+        - containerPort: 3000
+        envFrom:
+        - configMapRef:
+            name: my-app-config
+        - secretRef:
+            name: my-app-secret
+        # 三种 probe 完整配置
+        startupProbe:
+          httpGet:
+            path: /healthz
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          failureThreshold: 30                 # 允许启动 150s
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 3000
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 3000
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app
+  labels:
+    app: my-app
+spec:
+  selector:
+    app: my-app
+  ports:
+  - port: 80
+    targetPort: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-app
+  labels:
+    app: my-app
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: app.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: my-app
+            port:
+              number: 80
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-app-config
+  labels:
+    app: my-app
+data:
+  LOG_LEVEL: "info"
+  NODE_ENV: "production"
+  PORT: "3000"
+---
+# Secret：data 字段值是 base64 编码
+# 创建方式：kubectl create secret generic my-app-secret --from-literal=api.token=<your-token>
+# 这里的 base64 是占位符（"placeholder"），生产请重新生成
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-app-secret
+  labels:
+    app: my-app
+type: Opaque
+data:
+  # echo -n 'placeholder' | base64
+  api.token: cGxhY2Vob2xkZXI=
