@@ -1,0 +1,68 @@
+# Day 48 Health Probe 演示
+# 包含三种 probe：startup / liveness / readiness
+# 通过 --- 分隔多个资源
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-with-probe
+  labels:
+    app: my-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: app
+        # 替换为你的实际镜像
+        image: ghcr.io/wss-321/devops-k8s-agent-roadmap:latest
+        ports:
+        - containerPort: 3000
+
+        # 启动慢的应用必备：避免 liveness 在启动期间误杀
+        startupProbe:
+          httpGet:
+            path: /healthz
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          # 允许启动 5s + 30 × 5s = 155s
+          failureThreshold: 30
+
+        # 活着吗？只查进程本身，不要查外部依赖
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 3000
+          periodSeconds: 10
+          timeoutSeconds: 3
+          # 最长存活 = 0 + (3-1) × 10 = 20s
+          failureThreshold: 3
+
+        # 准备好接流量了吗？可以查依赖（如 DB）
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 3000
+          periodSeconds: 5
+          timeoutSeconds: 3
+          # 失败 2 次 = 摘除流量（不重启）
+          failureThreshold: 2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app
+spec:
+  # selector 选 Pod（不写 readinessProbe，由 Endpoints Controller 同步）
+  selector:
+    app: my-app
+  ports:
+  - port: 80        # Service 端口（集群内访问）
+    targetPort: 3000 # 转发到 Pod 的 3000 端口
