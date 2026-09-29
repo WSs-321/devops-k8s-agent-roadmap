@@ -1,11 +1,11 @@
-# 前七周知识详细复习（Day 01-49）
+﻿# 前七周知识详细复习（Day 01-49）
 
 > 覆盖 Week 1-7：GitHub Actions CI → Docker → GHCR → CD/Environments → 安全治理 → Kubernetes 基础。
 > 用途：全面复习 + 面试自测，每个部分的"重点"均为高频考点。
 
 ---
 
-# 第一部分：GitHub Actions CI（Week 1-2）
+## 第一部分：GitHub Actions CI（Week 1-2）
 
 ## 1.1 六大核心概念
 
@@ -79,7 +79,7 @@ strategy:
 
 ---
 
-# 第二部分：Docker 容器（Week 3）
+## 第二部分：Docker 容器（Week 3）
 
 ## 2.1 三者关系
 
@@ -91,13 +91,13 @@ Dockerfile --docker build--> Image --docker run--> Container
 ## 2.2 多阶段构建
 
 ```dockerfile
-# 阶段 1：构建
+## 阶段 1：构建
 FROM node:22-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev          # 只装生产依赖
 
-# 阶段 2：运行
+## 阶段 2：运行
 FROM node:22-alpine AS runner
 WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
@@ -158,7 +158,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 ---
 
-# 第三部分：GHCR 与镜像流水线（Week 4）
+## 第三部分：GHCR 与镜像流水线（Week 4）
 
 ## 3.1 GHCR 要点
 
@@ -232,7 +232,7 @@ jobs:
 
 ---
 
-# 第四部分：CD 与 Environments（Week 5）
+## 第四部分：CD 与 Environments（Week 5）
 
 ## 4.1 Environment 概念
 
@@ -269,12 +269,12 @@ Organization < Repository < Environment
 为什么生产密钥放 environment secret：即使 workflow YAML 被改，没有该 environment 的部署权限 + 审批，也拿不到密钥，权限与审批双重保护。
 
 ```yaml
-# 正确：环境变量注入
+## 正确：环境变量注入
 env:
   TOKEN: ${{ secrets.DEPLOY_KEY }}
 run: ./deploy.sh
 
-# 错误：直接插值打印
+## 错误：直接插值打印
 run: echo ${{ secrets.DEPLOY_KEY }}
 ```
 
@@ -305,7 +305,7 @@ permissions:
 
 ---
 
-# 第五部分：安全治理（Week 6）
+## 第五部分：安全治理（Week 6）
 
 ## 5.1 权限最小化
 
@@ -404,7 +404,7 @@ Status Check 四个坑：
 
 ---
 
-# 第六部分：Kubernetes 基础（Week 7）
+## 第六部分：Kubernetes 基础（Week 7）
 
 ## 6.1 核心对象层级
 
@@ -512,7 +512,7 @@ Secret（base64 编码敏感配置）──┘
 
 ---
 
-# 七周能力主线
+## 七周能力主线
 
 ```text
 写代码 → push → CI（lint/test/matrix/cache）
@@ -527,7 +527,7 @@ Secret（base64 编码敏感配置）──┘
 
 ---
 
-# 自测重点清单
+## 自测重点清单
 
 - [ ] 为什么 CI 里用 `npm ci` 而不是 `npm install`
 - [ ] `load: true` 为什么和 multi-platform 互斥
@@ -542,7 +542,7 @@ Secret（base64 编码敏感配置）──┘
 
 ---
 
-# 相关文件索引
+## 相关文件索引
 
 | 模块 | 笔记位置 |
 | --- | --- |
