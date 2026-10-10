@@ -1166,7 +1166,308 @@ OpenAI Codex CLI / Gemini CLI / Cursor Agent / GitHub Copilot Agent——形态�
 
 ---
 
-## 11. 全书总览：三张表带走全部结论
+## 11. 三种 AI 开发路线：算子开发 / 模型开发 / Agent 开发
+
+学完前 10 章自然会问：**"我想吃 AI 这碗饭，该从哪一层入手？"** 行业内其实是三种完全不同的职业，技术栈几乎不重叠。本章把三者的工作内容、技术实现、学习路径彻底讲清。
+
+### 11.1 三层技术栈全景：它们各自站在哪一层
+
+```text
+┌──────────────────────────────────────────────┐
+│  ③ Agent 开发（应用层）—— 造"产品"             │
+│  在现成模型 API 之上搭建能完成任务的系统         │
+│  产出：Claude Code / Cursor / 客服机器人 / RAG  │
+│  ← 本教程第 5-9 章全部内容都是这一层            │
+├──────────────────────────────────────────────┤
+│  ② 模型开发（模型层）—— 造"大脑"               │
+│  训练模型本身：预训练 / 微调 / 对齐             │
+│  产出：Claude / GPT / Qwen / Llama 的权重文件   │
+│  ← 本教程第 3-4 章讲的是"用"，这一层是"造"      │
+├──────────────────────────────────────────────┤
+│  ① 算子开发（系统层）—— 造"肌肉"               │
+│  让模型在 GPU 上跑得快、跑得省：CUDA 算子、       │
+│  推理引擎、量化                                │
+│  产出：FlashAttention / vLLM / TensorRT-LLM    │
+│  ← 没有这一层，模型只是硬盘里的大文件           │
+└──────────────────────────────────────────────┘
+
+依赖关系：① 让②训出的模型能跑 → ③ 拿 API 组装成产品
+分工类比：① 造发动机（F1 车队）  ② 造驾驶员的"驾照考试"（教练）
+          ③ 造赛车+车队运营（比赛拿名次）
+```
+
+### 11.2 算子开发：榨干 GPU 的系统层
+
+**干什么**：写 GPU 上运行的底层计算函数（算子 = Kernel），优化推理引擎，让同一个模型推理速度翻倍、成本减半。这是纯高性能计算（HPC）工作，本质是**体系结构问题而非 AI 问题**。
+
+**为什么需要它（一个数字看懂）**：
+
+```text
+朴素实现的 Self-Attention 有多贵？
+序列长度 N=4096，注意力矩阵 N² = 1600 万个元素
+用 FP16 存：1600万 × 2字节 × 3(权重) ≈ 100MB+，且每层都要算
+瓶颈根本不在"算"（GPU 算力过剩），而在"搬"（显存带宽 HBM 只有几个 TB/s）
+—— 这种情况叫 memory-bound（访存受限），优化思路 = 减少显存读写次数
+
+FlashAttention（2022，目前一切推理引擎的标配）三板斧：
+① Tiling 分块：把 Q/K/V 切成小块装进片上 SRAM（比 HBM 快 10 倍+）
+② 在线 Softmax：块与块之间不落盘，边算边更新，中间结果不回写 HBM
+③ Kernel Fusion：多个算子融合成一次 GPU 调用，减少读写往返
+结果：显存从 O(N²) 降到 O(N)，速度 2-4 倍 —— 这就是一个算子工程师的价值
+```
+
+**推理引擎的四大核心技术（算子开发的集大成产物）**：
+
+```text
+1. KV Cache：解码"我爱北京"的第 5 个词时，前 4 个词的 K/V 向量缓存复用，
+   避免每生成一个词就重算全部历史 —— 没有它，生成速度慢 N 倍
+
+2. PagedAttention（vLLM 核心创新，借鉴 OS 虚拟内存分页思想）：
+   朴素 KV Cache 按最大长度预留显存 → 严重碎片浪费（就像不分段直接分配内存）
+   PagedAttention 把 KV Cache 切成固定"页"按需分配 → 显存利用率 60%→95%+，
+   服务吞吐直接翻 2-4 倍 —— 注意：这是 OS 的分页思想在 GPU 上的复刻！
+
+3. Continuous Batching：请求级动态组批——新请求随时插入、完成的随时退出，
+   而不是等一批全部跑完（静态批处理的 GPU 利用率可能只有 30%）
+
+4. 量化：FP16 权重 → INT8/INT4 存储与计算
+   GPTQ/AWQ（训练后量化，剪掉"不重要"的精度位）
+   效果：显存减半再减半，INT4 时 70B 模型可塞进单卡消费级显卡
+```
+
+**Demo：Triton 写一个最简单的 GPU 算子（可运行）**
+
+```python
+# pip install triton torch
+import triton
+import triton.language as tl
+import torch
+
+@triton.jit  # ← Triton：不用写 C++/CUDA，用 Python 语法写 GPU 算子
+def add_kernel(x_ptr, y_ptr, out_ptr, n, BLOCK: tl.constexpr):
+    pid = tl.program_id(0)                       # 当前是第几个程序块
+    offs = pid * BLOCK + tl.arange(0, BLOCK)      # 本块负责的元素下标
+    mask = offs < n                              # 边界保护（n 不整除 BLOCK 时）
+    tl.store(out_ptr + offs,                     # 结果写回显存
+             tl.load(x_ptr + offs, mask=mask) + tl.load(y_ptr + offs, mask=mask),
+             mask=mask)
+
+def gpu_add(x, y):
+    out = torch.empty_like(x)
+    n = x.numel()
+    grid = lambda meta: (triton.cdiv(n, meta["BLOCK"]),)  # 并行块数
+    add_kernel[grid](x, y, out, n, BLOCK=1024)
+    return out
+
+x, y = torch.rand(1_000_000, device="cuda"), torch.rand(1_000_000, device="cuda")
+assert torch.allclose(gpu_add(x, y), x + y)
+# 这就是算子开发的日常：把一个数学操作编译成 GPU 并行程序
+# 真实的 FlashAttention/RMSNorm/RoPE 就是这种 kernel 的复杂版
+```
+
+**技能画像与学习路径**：
+
+| 项目 | 内容 |
+|------|------|
+| 核心语言 | CUDA / Triton / C++ / Python |
+| 知识内核 | GPU 架构（SM/SRAM/HBM/寄存器）、roofline 模型（判读 compute-bound 还是 memory-bound）、并行归约、warp 调度 |
+| 数学要求 | 数值优化、矩阵分块策略（线代必须极扎实） |
+| 入门路径 | ①《CUDA Programming Guide》 → ② Triton 官方教程改写 fused kernel → ③ 读 FlashAttention 源码 → ④ 给 vLLM/SGLang 提 PR |
+| 岗位现实 | 全球极少数精英岗位，芯片公司（NVIDIA/昇腾）+ 头部推理引擎团队；一将难求但坑位极少 |
+
+### 11.3 模型开发：训练大脑的模型层
+
+**干什么**：决定模型"聪明与否"的全部工序——数据配方、预训练架构、后训练对齐。工作产出是**权重文件**（一堆数字），本质是"大规模数据 + 大规模实验科学"。
+
+**核心技术一：预训练的 4D 并行（没有分布式 = 训不动）**
+
+```text
+一个 70B 模型光权重就 140GB（FP16），单卡 80GB 放不下，必须拆到多卡多机：
+
+数据并行 DP：每张卡存完整模型，各算不同数据批，梯度汇总（入门方案）
+  └─ ZeRO（DeepSpeed）：把"权重/梯度/优化器状态"切片存到不同卡，
+     显存需求按并行度线性下降 —— 大模型训练的事实标准
+
+张量并行 TP：把单层矩阵乘按"列/行"切开，多卡协作算完一个矩阵（层内拆）
+流水线并行 PP：把模型按层切开，1-12 层在卡组A、13-24 层在卡组B（层间拆）
+上下文并行 CP：超长序列按 token 切片并行计算
+
+实际训练 = TP + PP + DP(ZeRO) 组合，千卡集群 + NCCL/InfiniBand 通信调优
+（"loss spike 处理""梯度检查点""bf16 数值稳定性"都是这一层的日常脏活）
+```
+
+**核心技术二：数据工程（模型质量的真正上限）**
+
+```text
+行业共识：预训练质量 = 数据配方 × 60% + 架构 × 20% + 超参 × 20%
+数据管线（决定"模型读过什么"）：
+  网页抓取 → trafilatura 正文抽取 → 语言/质量分类器过滤
+  → MinHash 去重（近似检测重复文档）→ 配比（代码:网页:论文:百科 按比例混合）
+  → 数据课程（训练后期掺入高质量指令数据）
+后训练数据（决定"模型怎么表现"）：
+  SFT 对话对（人工写 + 模型合成 + 质量过滤）
+  偏好数据（同一问题多答案 → 人工排序，喂给 RLHF/DPO）
+Scaling Law：训练前用小模型拟合"参数量×数据量×算力→loss"曲线，
+  预测大模型效果，决定"该训多大"—— OpenAI 的看家本领
+```
+
+**核心技术三：后训练三部曲（把"补全机器"变成"助手"）**
+
+```text
+SFT（监督微调）      ：几万条高质量指令-回答对，教模型"听懂人话"
+                        （技术上是 4.3 章讲过的微调，但只调对话格式）
+偏好对齐             ：RLHF（训奖励模型 + PPO，重但效果上限高）
+                    或 DPO（直接偏好优化，绕过奖励模型，轻量、开源界主流）
+持续评测 + 消融实验   ：每个改动都要在 MMLU/代码/数学等基准上看
+                        数据变化 → 训练 → 评测 → 归因 → 下一轮（科学实验循环）
+```
+
+**Demo：LoRA 微调入门（普通人切入模型开发最现实的一步，可运行）**
+
+```python
+# pip install peft transformers datasets
+# LoRA 原理：冻结原模型 70B 权重，只训练插入的少量低秩矩阵（~0.1% 参数）
+# —— 让消费级显卡也能"微调"大模型，模型开发的"平民化入口"
+from peft import LoraConfig, get_peft_model
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-1.5B-Instruct")
+config = LoraConfig(
+    r=8,                      # 低秩矩阵的秩：越大容量越大、显存越多
+    lora_alpha=16,           # 缩放系数（通常 = 2r）
+    target_modules=["q_proj", "v_proj"],  # 只对 Attention 的 Q/V 矩阵做 LoRA
+    lora_dropout=0.05, task_type="CAUSAL_LM",
+)
+model = get_peft_model(model, config)
+model.print_trainable_parameters()
+# 输出: trainable params: 0.9M || all params: 1.5B || trainable%: 0.06%
+# —— 99.94% 的参数被冻结：8GB 显卡即可微调，这就是 LoRA 的意义
+# 之后用 Trainer 在你自己的"指令-回答"数据上训练（同 3.3 节范式）
+```
+
+**技能画像与学习路径**：
+
+| 项目 | 内容 |
+|------|------|
+| 核心语言 | Python（PyTorch 顶级熟练） |
+| 知识内核 | 深度学习理论（线代/概率/优化推导级）、Transformer 源码级理解、分布式训练、数据工程、实验科学方法论 |
+| 入门路径 | ① Karpathy 的 nanoGPT（从零手写 GPT）→ ② 复现经典论文（LoRA/DPO）→ ③ nanoGPT 上做消融实验 → ④ 开源模型社区贡献 → ⑤ 实验室/大厂训练岗 |
+| 岗位现实 | 主要在头部大厂和实验室；竞争极烈但开源生态让"业余可入门"，LoRA 微调已成为应用工程师的普及技能 |
+
+### 11.4 Agent 开发：构建产品的应用层
+
+**干什么**：在模型 API 之上，把第 5-9 章的全部技术（RAG / 工具 / 上下文工程 / 护栏 / 评测）组装成**能可靠完成业务任务的系统**。不训模型、不碰 GPU——产出是产品代码。
+
+**核心技术一：上下文工程（Agent 工程师的看家本领）**
+
+```text
+每个 Agent 会话的上下文窗口都是稀缺资源（类比内存管理）：
+  预算分配 = 系统提示词 + Skill 注入 + 工具 schema + 检索资料 + 历史轮次 + 工具结果
+实战手法：
+  ① 工具结果治理：5MB 日志截断为前 50 行 + 错误摘要（否则一次调用撑爆窗口）
+  ② 历史压缩：长任务自动摘要早期轮次，保留"目标/关键决策/未完成项"
+  ③ 子 Agent 分流：探索性搜索类脏活派给子 Agent，只回传结论（Claude Code 同款策略）
+  ④ 按需注入：Skill/文档不常驻，任务匹配才加载（7.4 节原理）
+```
+
+**核心技术二：工具设计原则（决定 Agent 成败的隐形手艺）**
+
+```text
+工具不是越多越好 —— 工具列表本身也占上下文，且选项过多模型会选错：
+  ① 描述写给模型看：docstring 就是模型的"使用说明书"，写清何时该用、何时不用
+  ② 宁可组合不要巨石：get_pod + describe_pod 两把小刀 > 一个万能大工具
+  ③ 返回值要"可消化"：返回结构化摘要而非原始 JSON dump（省 token 又降幻觉）
+  ④ 幂等与安全分级：读类工具自动放行，写/删类工具必须过审批（对应 Harness 护栏）
+```
+
+**核心技术三：Evals 评测驱动开发（Agent 的"单元测试"）**
+
+模型输出不确定，"能不能用"没法拍脑袋——评测是 Agent 开发区别于普通后端开发的**方法论核心**：
+
+```python
+# Demo：一个最小的 Evals 框架（可运行）
+import json
+
+# ① Golden Set：真实任务样本 + 预期（这是团队最值钱的资产）
+cases = [
+    {"input": "k8s 最小调度单元是什么？", "expect_contains": "Pod", "must_cite": True},
+    {"input": "把 web-api 扩到 3 副本", "expect_tool": "kubectl_scale"},
+    {"input": "今天天气如何？", "expect_contains": "未提及"},   # 测幻觉抑制
+]
+
+def run_evals(agent_fn) -> float:
+    passed = 0
+    for c in cases:
+        result = agent_fn(c["input"])                 # 跑你的 Agent（RAG/Loop 均可）
+        ok = (c.get("expect_contains", "×") in str(result)
+              and (c.get("must_cite") is not True or "[" in str(result)))
+        passed += ok
+        print(f"  {'✅' if ok else '❌'} {c['input']}")
+    return passed / len(cases)
+
+score = run_evals(ask)   # ask 来自 5.3 节的 RAG Demo
+print(f"通过率: {score:.0%}")
+# 开发循环 = 改 Prompt/切片策略/工具描述 → 跑 Evals → 看通过率变化 → 提交
+# 没有这层，任何"优化"都是玄学；有了它，Agent 开发才成为工程
+```
+
+**核心技术四：成本与延迟工程**
+
+```text
+模型路由：简单任务走小模型（gpt-4o-mini/haiku），难任务升级大模型 —— 成本降 10 倍
+缓存：相同 prefix 的请求命中 KV Cache 缓存（Prompt Caching）—— 重复系统提示词零成本
+批处理：非实时任务走 Batch API（半价）
+观测：LangSmith/LangFuse 记录每步的 token、延迟、工具调用 → 找出烧钱大户
+```
+
+**技能画像与学习路径**：
+
+| 项目 | 内容 |
+|------|------|
+| 核心语言 | Python / TypeScript |
+| 知识内核 | 本教程第 5-9 章（RAG/Loop/MCP/Skill/Harness）+ 上下文工程 + Evals + 成本工程 |
+| 入门路径 | ① 用 API 复刻本教程 5.3/6.4 的 Demo → ② 读一个开源 Harness 源码（Aider/OpenHands）→ ③ 给自己业务做 Evals → ④ 上手 MCP Server/Skill 开发 → ⑤ 产品化 |
+| 岗位现实 | 需求量最大、增长最快的方向；门槛最低但"做好"很难——竞争在工程与评测，不在模型 |
+
+### 11.5 三路线全维度对比
+
+| 维度 | 算子开发 | 模型开发 | Agent 开发 |
+|------|---------|---------|-----------|
+| 一句话 | 让模型跑得快、跑得省 | 让模型变聪明、变听话 | 让模型完成任务、落地业务 |
+| 技术本质 | 体系结构 / HPC | 大规模数据 + 实验科学 | 组装 + 评测 + 工程化 |
+| 核心语言 | CUDA/Triton/C++ | Python (PyTorch) | Python/TS |
+| 数学要求 | 线代 + 数值优化 + 体系结构 | 最深（理论推导级） | 概念级即可 |
+| 硬件知识 | GPU 架构级 | 千卡集群级 | API 级 |
+| 代表产出 | FlashAttention / vLLM | Claude / GPT / Qwen 权重 | Claude Code / RAG 产品 |
+| 岗位数量 | 极少 | 少 | **最多且激增** |
+| 入门门槛 | 最高 | 高 | 最低 |
+| 一年后能干嘛 | 给引擎提 PR | 复现论文、LoRA 微调 | 独立交付 Agent 产品 |
+| 与本教程的对应 | （延伸学习） | 第 3-4 章的"造"侧 | 第 5-9 章全部 |
+
+### 11.6 怎么选：结合 DevOps 背景的路线建议
+
+三条线不是互斥的，但**主攻方向按下述优先级**：
+
+```text
+最优主攻：Agent 开发
+  理由①  你的 K8s/CI/CD 技能是直接可复用的差异化优势 ——
+          众所周知 vLLM 要部署在 K8s 上、Evals 要跑在 CI 里、
+          Agent 的工具就是 kubectl/Argo —— "懂基建的 Agent 工程师"极稀缺
+  理由②  Claude Code 等 Harness 把这一层门槛持续砸低，生态红利期正当时
+  理由③  本仓库的 Skill/规则/工作流实践就是 Agent 工程的日常
+
+建议辅修：模型开发的"应用侧"
+  LoRA 微调 + RAG 调优（11.3 的 Demo 入门即可）——
+  让你从"只会调 API"升级为"懂模型脾气的应用工程师"
+
+了解即可：算子开发
+  掌握 11.2 的概念（memory-bound、KV Cache、量化）——
+  足够你在选型时看懂 vLLM 配置参数、和推理团队对话；深入只在转 HPC 时再学
+```
+
+---
+
+## 12. 全书总览：三张表带走全部结论
 
 ### 表 1：各阶段技术现状（"还在用吗"终极回答）
 
