@@ -1166,37 +1166,43 @@ OpenAI Codex CLI / Gemini CLI / Cursor Agent / GitHub Copilot Agent——形态�
 
 ---
 
-## 11. 三种 AI 开发路线：算子开发 / 模型开发 / Agent 开发
+## 11. 四条 AI 开发路线：算子开发 / 框架开发 / 模型开发 / Agent 开发
 
-学完前 10 章自然会问：**"我想吃 AI 这碗饭，该从哪一层入手？"** 行业内其实是三种完全不同的职业，技术栈几乎不重叠。本章把三者的工作内容、技术实现、学习路径彻底讲清。
+学完前 10 章自然会问：**"我想吃 AI 这碗饭，该从哪一层入手？"** 行业内其实是四条完全不同的职业，技术栈几乎不重叠。本章把四者的工作内容、技术实现、学习路径彻底讲清——其中算子层覆盖英伟达 CUDA 与昇腾 Ascend C 两条栈，框架层以 PyTorch 技术内幕与国产框架（torch_npu/MindSpore）为主线。
 
-### 11.1 三层技术栈全景：它们各自站在哪一层
+### 11.1 四层技术栈全景：它们各自站在哪一层
 
 ```text
 ┌──────────────────────────────────────────────┐
-│  ③ Agent 开发（应用层）—— 造"产品"             │
+│  ④ Agent 开发（应用层）—— 造"产品"             │
 │  在现成模型 API 之上搭建能完成任务的系统         │
 │  产出：Claude Code / Cursor / 客服机器人 / RAG  │
 │  ← 本教程第 5-9 章全部内容都是这一层            │
 ├──────────────────────────────────────────────┤
-│  ② 模型开发（模型层）—— 造"大脑"               │
+│  ③ 模型开发（模型层）—— 造"大脑"               │
 │  训练模型本身：预训练 / 微调 / 对齐             │
 │  产出：Claude / GPT / Qwen / Llama 的权重文件   │
 │  ← 本教程第 3-4 章讲的是"用"，这一层是"造"      │
 ├──────────────────────────────────────────────┤
+│  ② 框架开发（框架层）—— 造"神经系统"           │
+│  开发 PyTorch 这类框架本身：算子调度、自动求导、 │
+│  分布式、图编译；以及把新芯片接入框架生态         │
+│  产出：PyTorch / MindSpore / torch_npu         │
+│  ← 大脑离开神经传导，肌肉再强也是瘫痪            │
+├──────────────────────────────────────────────┤
 │  ① 算子开发（系统层）—— 造"肌肉"               │
-│  让模型在 GPU 上跑得快、跑得省：CUDA 算子、       │
-│  推理引擎、量化                                │
-│  产出：FlashAttention / vLLM / TensorRT-LLM    │
+│  让模型在 GPU/NPU 上跑得快、跑得省：CUDA /      │
+│  Ascend C 算子、推理引擎、量化                  │
+│  产出：FlashAttention / vLLM / CANN 算子库      │
 │  ← 没有这一层，模型只是硬盘里的大文件           │
 └──────────────────────────────────────────────┘
 
-依赖关系：① 让②训出的模型能跑 → ③ 拿 API 组装成产品
-分工类比：① 造发动机（F1 车队）  ② 造驾驶员的"驾照考试"（教练）
-          ③ 造赛车+车队运营（比赛拿名次）
+依赖关系：① 造硬件原语 → ② 封装成框架 → ③ 用框架训模型 → ④ 拿 API 组装成产品
+分工类比：① 造发动机  ② 造变速箱与线束  ③ 造"驾照考试"（教练）
+          ④ 赛车运营（比赛拿名次）
 ```
 
-### 11.2 算子开发：榨干 GPU 的系统层
+### 11.2 算子开发：榨干 GPU/NPU 的系统层
 
 **干什么**：写 GPU 上运行的底层计算函数（算子 = Kernel），优化推理引擎，让同一个模型推理速度翻倍、成本减半。这是纯高性能计算（HPC）工作，本质是**体系结构问题而非 AI 问题**。
 
@@ -1265,17 +1271,265 @@ assert torch.allclose(gpu_add(x, y), x + y)
 # 真实的 FlashAttention/RMSNorm/RoPE 就是这种 kernel 的复杂版
 ```
 
+**国产平行世界：昇腾 Ascend C 算子开发（同一个问题，另一套硬件）**
+
+CUDA 是英伟达世界的算子语言；在华为昇腾 NPU 的世界里，对应物叫 **Ascend C**。两者解决的问题一模一样——把数学运算变成芯片上的并行程序——但硬件设计思路不同，写法随之分叉。国产芯片放量后，这套技能在昇腾生态里被完整复刻：
+
+```text
+达芬奇（Davinci）架构 —— NPU 与 GPU 的根本分歧：
+  GPU 思路：数千个通用小核（SM），靠海量线程填满芯片（SIMT 模型）
+  NPU 思路：少量 AI Core，每核内"专用单元分工"：
+    ① Cube 单元：矩阵乘专用电路（一次算完一整块矩阵乘，天生为 AI 而生）
+    ② Vector 单元：向量运算（Softmax / 激活 / 逐元素操作）
+    ③ Scalar 单元：标量控制（循环 / 地址 / 分支）
+  记忆层次与 GPU 同构：Global Memory(HBM) → 片上 Unified Buffer → 寄存器
+
+CANN 软件栈 —— 与 CUDA 全栈逐层对标：
+  驱动固件        ↔  Ascend HDK（含驱动/固件）
+  运行时          ↔  ACL Runtime（对标 CUDA Runtime）
+  算子语言        ↔  CUDA C++（nvcc） ↔ Ascend C（CANN 编译器）
+  基础算子库      ↔  cuBLAS/cuDNN ↔ CANN 内置融合算子库
+  框架            ↔  PyTorch ↔ torch_npu / MindSpore
+  推理引擎        ↔  vLLM ↔ vllm-ascend
+
+Ascend C 编程范式 —— 与 CUDA 的三大差异：
+  ① 并行主体：CUDA 一个线程算一个元素；Ascend C 一个 AI Core 算一块数据
+  ② 内存搬运显式化：GM↔UB 的数据用「队列 TQue + DataCopy(DMA)」显式搬运，
+     配合双缓冲实现"搬运与计算流水重叠"（思想同 FlashAttention 的 tiling）
+  ③ 固定三段式：CopyIn(GM→UB) → Compute(硬件指令) → CopyOut(UB→GM)
+```
+
+**Demo：Ascend C 版向量加法（需昇腾卡 + CANN 工具链，看结构与 CUDA 的对照为主）**
+
+```cpp
+// 开发流程：写 .cpp 算子 → msopgen 生成工程骨架 → 编译成 .run 部署
+//           → Host 侧经 aclnn 接口调用（对标 torch.ops 调用 kernel）
+#include "kernel_operator.h"   // Ascend C 核心头文件：TPipe/TQue/Tensor 都在这里
+
+using namespace AscendC;
+
+constexpr int32_t BUFFER_NUM = 2;  // 双缓冲：上一块在算时下一块已在搬（流水线）
+
+class KernelAdd {
+public:
+    __aicore_inline__ void Init(GM_ADDR x, GM_ADDR y, GM_ADDR z,
+                                uint32_t totalLength, uint32_t tileNum) {
+        // ① 三条队列各申请一块片上内存（Unified Buffer），长度 = 一个 tile
+        pipe.InitBuffer(inQueueX, BUFFER_NUM, tileLength * sizeof(float));
+        pipe.InitBuffer(inQueueY, BUFFER_NUM, tileLength * sizeof(float));
+        pipe.InitBuffer(outQueueZ, BUFFER_NUM, tileLength * sizeof(float));
+        // ② 绑定全局内存（HBM 侧）—— 对标 CUDA kernel 的裸指针参数
+        xGm.SetGlobalBuffer(x, totalLength * sizeof(float));
+        yGm.SetGlobalBuffer(y, totalLength * sizeof(float));
+        zGm.SetGlobalBuffer(z, totalLength * sizeof(float));
+        // ③ 切分参数由 host 侧算好传入（tiling）—— 对标 CUDA 的 grid 计算逻辑
+        this->tileNum = tileNum;
+    }
+    __aicore_inline__ void Process() {
+        for (int32_t i = 0; i < tileNum; i++) {  // ← CUDA 的"线程网格"被压进这个循环
+            CopyIn(i);    // GM → 片上 UB（DMA 搬运，不占计算单元）
+            Compute(i);   // Vector 硬件指令计算
+            CopyOut(i);   // UB → GM
+        }
+    }
+private:
+    __aicore_inline__ void CopyIn(int32_t i) {
+        LocalTensor<float> xLocal = inQueueX.AllocTensor<float>();  // 从队列领片上内存
+        DataCopy(xLocal, xGm[i * tileLength], tileLength);        // 对标异步 memcpy
+        inQueueX.EnQue(xLocal);    // 入队 = 声明"这块数据搬运中"
+    }
+    __aicore_inline__ void Compute(int32_t i) {
+        LocalTensor<float> xLocal = inQueueX.DeQue<float>();  // 出队 = 等待搬运完成
+        LocalTensor<float> yLocal = inQueueY.DeQue<float>();
+        LocalTensor<float> zLocal = outQueueZ.AllocTensor<float>();
+        Add(zLocal, xLocal, yLocal, tileLength);  // ← 注意：这不是普通 C++ 函数，
+                                                  //   是编译器识别的 NPU 向量指令
+        outQueueZ.EnQue(zLocal);
+        inQueueX.FreeTensor(xLocal);   // 片上内存极小（~256KB），必须手工归还
+        inQueueY.FreeTensor(yLocal);
+    }
+    __aicore_inline__ void CopyOut(int32_t i) {
+        LocalTensor<float> zLocal = outQueueZ.DeQue<float>();
+        DataCopy(zGm[i * tileLength], zLocal, tileLength);
+        outQueueZ.FreeTensor(zLocal);
+    }
+    TPipe pipe;                                       // 片上内存管理器（内存池）
+    TQue<QuePosition::VECIN, BUFFER_NUM> inQueueX;    // 「队列」解耦搬运与计算
+    TQue<QuePosition::VECIN, BUFFER_NUM> inQueueY;
+    TQue<QuePosition::VECOUT, BUFFER_NUM> outQueueZ;
+    GlobalTensor<float> xGm, yGm, zGm;                // HBM 侧张量
+    static constexpr int32_t tileLength = 128;       // 一个 tile 128 个元素
+    uint32_t tileNum = 0;
+};
+
+// NPU kernel 统一入口签名（workspace / tiling 由 host 侧框架层传入）
+extern "C" __global__ __aicore__ void add_custom(GM_ADDR x, GM_ADDR y, GM_ADDR z,
+                                                 GM_ADDR workspace, GM_ADDR tiling) {
+    __gm__ uint32_t* tilingGm = (__gm__ uint32_t*)tiling;
+    KernelAdd op;
+    op.Init(x, y, z, tilingGm[0], tilingGm[1]);  // tilingGm[0]=totalLength [1]=tileNum
+    op.Process();
+}
+// 读懂「队列 + 三段式」就读懂了 Ascend C 的灵魂：
+// 它把 CUDA 中靠线程调度器隐式完成的「搬数与计算重叠」变成了显式编程模型
+```
+
+同一个算子（向量加）在两条技术栈上的概念逐项对照：
+
+| 概念 | CUDA（英伟达） | Ascend C（昇腾） |
+|------|--------------|----------------|
+| 并行主体 | 海量 Thread（SIMT） | AI Core（核内分块 + 流水） |
+| 片上内存 | shared memory | Unified Buffer（UB） |
+| 全局内存 | global memory（HBM） | Global Memory（HBM） |
+| 搬数方式 | `__shared__` 手写循环 / cp.async | TQue 队列 + DataCopy（DMA） |
+| 计算指令 | intrinsics / PTX / Triton | Vector/Cube 硬件指令 |
+| 矩阵乘 | mma 指令组（软件编排） | Cube 单元（一步到位） |
+| 编译器 | nvcc | CANN 编译器 |
+| Python 调用入口 | torch.ops / vLLM | torch_npu / MindSpore / aclnn |
+
 **技能画像与学习路径**：
 
 | 项目 | 内容 |
 |------|------|
-| 核心语言 | CUDA / Triton / C++ / Python |
-| 知识内核 | GPU 架构（SM/SRAM/HBM/寄存器）、roofline 模型（判读 compute-bound 还是 memory-bound）、并行归约、warp 调度 |
+| 核心语言 | CUDA / Triton / Ascend C / C++ / Python |
+| 知识内核 | GPU/NPU 架构（SM/AI Core/SRAM/HBM/寄存器）、roofline 模型（判读 compute-bound 还是 memory-bound）、并行归约、warp 调度、双缓冲流水 |
 | 数学要求 | 数值优化、矩阵分块策略（线代必须极扎实） |
 | 入门路径 | ①《CUDA Programming Guide》 → ② Triton 官方教程改写 fused kernel → ③ 读 FlashAttention 源码 → ④ 给 vLLM/SGLang 提 PR |
-| 岗位现实 | 全球极少数精英岗位，芯片公司（NVIDIA/昇腾）+ 头部推理引擎团队；一将难求但坑位极少 |
+| 国产路径 | ① 昇腾社区《Ascend C 开发教程》+ 跑通 CANN samples 的 Add/Softmax → ② 精读达芬奇架构（Cube/Vector/UB/双缓冲） → ③ 改写融合算子（如 RMSNorm+量化） → ④ 给 CANN / vllm-ascend 提 PR |
+| 岗位现实 | 全球极少数精英岗位，芯片公司（NVIDIA/昇腾/寒武纪）+ 头部推理引擎团队；国产芯片生态扩张期，昇腾算子岗需求逆势增长 |
 
-### 11.3 模型开发：训练大脑的模型层
+### 11.3 框架开发：PyTorch 的技术内幕（框架层）
+
+**干什么**：开发/维护 AI 框架本身（PyTorch / MindSpore / PaddlePaddle），以及把新芯片"接进"框架生态（如华为 torch_npu 把昇腾挂进 PyTorch）。模型开发者写 `y = model(x)` 时丝般顺滑，背后是这一层把 C++ 算子、自动求导、分布式通信、图编译全部缝合好——**AI 软件栈里的"操作系统"层**。
+
+**PyTorch 从一行代码到硬件的四层结构**：
+
+```text
+你写的：y = torch.add(x, 1)
+  ↓
+④ Python API 层（torch / torch.nn）：你接触的部分，动态语言体验全在这
+  ↓
+③ ATen 算子库（C++）：add/matmul/conv2d 的真正实现
+   注意：每个算子不是一份代码，而是 N 份实现注册成"多重人格"——
+        CPU 版 / CUDA 版 / NPU 版 / 自动求导版 / 稀疏版 / 量化推理版 ...
+  ↓
+② Dispatcher 调度器：运行时根据「设备? dtype? 需要梯度?」查注册表，
+   决定这次调用落到哪份实现 —— PyTorch 的心脏
+  ↓
+① c10 核心库：Tensor 存储 / Device 抽象 / 引用计数
+  ↓
+硬件算子：CPU(OpenMP) / GPU(cuBLAS+cuDNN+自定义CUDA) / NPU(CANN)
+```
+
+**核心技术一：Dispatcher —— "一套 API 跑遍所有芯片"的秘密**
+
+```python
+# Demo：亲眼看一次算子分发（可运行，纯 CPU 即可）
+import torch
+
+print(torch._C._dispatch_dump("aten::add"))
+# 输出一张按优先级排列的 dispatch key 表：
+#   AutogradCUDA → AutogradCPU → ... → CUDA → CPU → CompositeImplicit...
+# 含义：x 在 GPU 就命中 CUDA kernel，在 CPU 就命中 CPU kernel，
+#       需要 backward 就先经过 Autograd 键"录音"计算图
+# 关键洞察：新芯片厂商不改 PyTorch 一行代码，只需"往表里注册自己的算子"
+```
+
+**核心技术二：自定义算子注册（torch.library）—— 框架扩展的标准姿势**
+
+vLLM 把 PagedAttention kernel 挂进 PyTorch、torch_npu 把昇腾算子挂进 PyTorch、FlashAttention 变成 `torch.ops.flash_attn`——全部走这一个入口：
+
+```python
+# Demo：注册一个 PyTorch 里没有的自定义算子（可运行，纯 CPU）
+import torch
+
+# ① 定义 CPU 实现（真实场景这里挂的是 C++/CUDA/Ascend C kernel）
+def square_add_cpu(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    return x * x + y
+
+# ② 建命名空间 + 声明 schema（类型签名，dispatcher 靠它做检查）
+my_lib = torch.library.Library("myops", "DEF")
+my_lib.define("square_add(Tensor x, Tensor y) -> Tensor")
+
+# ③ 把实现挂到某个分发键上（这里是 CPU 键）
+my_lib.impl("square_add", square_add_cpu, "CPU")
+
+# ④ 现在它享受原生算子待遇：走 dispatcher、可序列化、torch.compile 可追踪
+x = torch.tensor([1.0, 2.0, 3.0])
+y = torch.tensor([10.0, 20.0, 30.0])
+print(torch.ops.myops.square_add(x, y))   # tensor([11., 24., 39.])
+
+# 框架工程师的日常就是这一套的三种变体：
+#   torch_npu：impl 的 "CPU" 换成 "NPU"，实现换成 CANN 算子 → 昇腾跑 PyTorch 代码
+#   vLLM：    实现换成 Triton/CUDA 写的 PagedAttention kernel
+#   用户：    训练代码一行不改 —— 这就是框架层的核心价值：解耦
+```
+
+**核心技术三：autograd 自动微分 —— 框架的灵魂**
+
+```text
+模型开发者"只写 forward，不写 backward"，谁在替他求导？
+  ① 每个 ATen 算子都附带一条"求导规则"，注册在 dispatcher 的 Autograd 键下：
+       z = x + y   →  dz/dx = 1,       dz/dy = 1
+       z = x @ y   →  dz/dx = dz @ yᵀ, dz/dy = xᵀ @ dz
+  ② 前向执行时，autograd 引擎把"参与运算的张量 + 算子"录成一张动态计算图
+  ③ loss.backward() 触发：按拓扑序反向遍历，逐算子查表套链式法则
+  数千条求导规则 + 运行时录音 + 反向回放 = 反向传播的全自动化
+  ← 这正是第 3 章手推 Attention 的意义：框架替你做的每一步，你都亲手验证过
+```
+
+**核心技术四：分布式训练的框架侧实现（DDP / FSDP）**
+
+```text
+DDP（数据并行的教科书实现，面试必背）：
+  ① 每卡持完整模型副本，各吃不同 mini-batch
+  ② 反向传播时，梯度经 AllReduce 跨卡求平均（ring 算法，带宽最优）
+  ③ 妙笔"梯度分桶"：反向算完一桶参数立刻异步发通信 → 通信与计算重叠
+  → 框架工程师的活：把这套逻辑 hook 进 autograd 的每个反向节点
+
+FSDP（单卡放不下整个模型时的完全分片方案）：
+  参数 / 梯度 / 优化器状态全部切片（shard）分布到所有卡上
+  前向走到某层：AllGather 现场拼出该层完整权重 → 用完立刻释放
+  → 本质是"用通信换显存"：8×A100 放不下的 70B，现在能训了
+  ← 11.4 模型开发里的 ZeRO/FSDP 概念，在框架层就是这样落地的
+```
+
+**核心技术五：torch.compile / Inductor —— PyTorch 2.0 的编译革命**
+
+```text
+动态图（eager 模式）好写但慢：每次算子都过一遍 Python + Dispatcher，无法全局优化
+torch.compile(model) 一行开启三段流水：
+  ① TorchDynamo：抓取 Python 字节码 → 转成 FX 计算图
+  ② AOTAutograd：把自动微分图提前展开成显式的前向图 + 反向图
+  ③ Inductor：把图翻译成 Triton（GPU）/ C++（CPU）代码再 JIT 编译
+效果：训练提速 30-80%，模型开发者零改动
+趋势：算子内部是 HPC（11.2），算子之间的"胶水"正从 Python 走向编译器
+```
+
+**国产框架与芯片适配（框架层的"中国战场"）**
+
+```text
+路线一：寄居 PyTorch 生态 —— 芯片公司的主流打法
+  torch_npu（华为昇腾）/ torch_mlu（寒武纪）/ torch_musa（摩尔线程）
+  原理：Dispatcher 开放注册 → 自家算子注册为 aten 后端 →
+        复用 PyTorch 百万级存量代码，用户迁移成本 ≈ 0
+路线二：自研框架
+  MindSpore（华为）：主打自动并行 + 静态图，昇腾"亲儿子"
+  PaddlePaddle（百度）：产业落地最多、中文文档最全
+岗位现实：国产芯片公司的"框架适配岗"长期缺人（C++ 功底 > AI 理论），
+         是 DevOps / 后端背景切入 AI 基础软件最平滑的入口
+```
+
+**技能画像与学习路径**：
+
+| 项目 | 内容 |
+|------|------|
+| 核心语言 | C++（主力）/ Python（API 层与测试） |
+| 知识内核 | C++ 工程（模板/RAII/智能指针）、编译原理基础、PyTorch 源码结构（ATen/Dispatcher/autograd/Tensor 内存模型）、通信原语（NCCL/HCCL） |
+| 入门路径 | ① PyTorch 官方教程 "Custom C++ and CUDA Operators" → ② 用 torch.library 复刻融合算子（如 fused RMSNorm） → ③ 读 torch.compile/Inductor 源码 → ④ 读 torch_npu / MindSpore 源码 → ⑤ 给 PyTorch / vllm-ascend 提 PR |
+| 岗位现实 | 岗位少于应用层、多于算子层；集中在芯片公司与框架团队；国产化浪潮下需求稳定，C++ 系统工程功底可从后端/嵌入式平滑迁移 |
+
+### 11.4 模型开发：训练大脑的模型层
 
 **干什么**：决定模型"聪明与否"的全部工序——数据配方、预训练架构、后训练对齐。工作产出是**权重文件**（一堆数字），本质是"大规模数据 + 大规模实验科学"。
 
@@ -1354,7 +1608,7 @@ model.print_trainable_parameters()
 | 入门路径 | ① Karpathy 的 nanoGPT（从零手写 GPT）→ ② 复现经典论文（LoRA/DPO）→ ③ nanoGPT 上做消融实验 → ④ 开源模型社区贡献 → ⑤ 实验室/大厂训练岗 |
 | 岗位现实 | 主要在头部大厂和实验室；竞争极烈但开源生态让"业余可入门"，LoRA 微调已成为应用工程师的普及技能 |
 
-### 11.4 Agent 开发：构建产品的应用层
+### 11.5 Agent 开发：构建产品的应用层
 
 **干什么**：在模型 API 之上，把第 5-9 章的全部技术（RAG / 工具 / 上下文工程 / 护栏 / 评测）组装成**能可靠完成业务任务的系统**。不训模型、不碰 GPU——产出是产品代码。
 
@@ -1429,24 +1683,24 @@ print(f"通过率: {score:.0%}")
 | 入门路径 | ① 用 API 复刻本教程 5.3/6.4 的 Demo → ② 读一个开源 Harness 源码（Aider/OpenHands）→ ③ 给自己业务做 Evals → ④ 上手 MCP Server/Skill 开发 → ⑤ 产品化 |
 | 岗位现实 | 需求量最大、增长最快的方向；门槛最低但"做好"很难——竞争在工程与评测，不在模型 |
 
-### 11.5 三路线全维度对比
+### 11.6 四条开发路线全维度对比
 
-| 维度 | 算子开发 | 模型开发 | Agent 开发 |
-|------|---------|---------|-----------|
-| 一句话 | 让模型跑得快、跑得省 | 让模型变聪明、变听话 | 让模型完成任务、落地业务 |
-| 技术本质 | 体系结构 / HPC | 大规模数据 + 实验科学 | 组装 + 评测 + 工程化 |
-| 核心语言 | CUDA/Triton/C++ | Python (PyTorch) | Python/TS |
-| 数学要求 | 线代 + 数值优化 + 体系结构 | 最深（理论推导级） | 概念级即可 |
-| 硬件知识 | GPU 架构级 | 千卡集群级 | API 级 |
-| 代表产出 | FlashAttention / vLLM | Claude / GPT / Qwen 权重 | Claude Code / RAG 产品 |
-| 岗位数量 | 极少 | 少 | **最多且激增** |
-| 入门门槛 | 最高 | 高 | 最低 |
-| 一年后能干嘛 | 给引擎提 PR | 复现论文、LoRA 微调 | 独立交付 Agent 产品 |
-| 与本教程的对应 | （延伸学习） | 第 3-4 章的"造"侧 | 第 5-9 章全部 |
+| 维度 | 算子开发 | 框架开发 | 模型开发 | Agent 开发 |
+|------|---------|---------|---------|-----------|
+| 一句话 | 让模型跑得快、跑得省 | 把硬件能力封装成顺手的框架 | 让模型变聪明、变听话 | 让模型完成任务、落地业务 |
+| 技术本质 | 体系结构 / HPC | 系统工程 + 编译原理 | 大规模数据 + 实验科学 | 组装 + 评测 + 工程化 |
+| 核心语言 | CUDA/Ascend C/Triton/C++ | C++ / Python | Python (PyTorch) | Python/TS |
+| 数学要求 | 线代 + 数值优化 + 体系结构 | 中等（编译/离散数学） | 最深（理论推导级） | 概念级即可 |
+| 硬件知识 | GPU/NPU 架构级 | 芯片抽象 + 通信原语 | 千卡集群级 | API 级 |
+| 代表产出 | FlashAttention / CANN 算子库 | PyTorch / torch_npu / torch.compile | Claude / GPT / Qwen 权重 | Claude Code / RAG 产品 |
+| 岗位数量 | 极少 | 少 | 少 | **最多且激增** |
+| 入门门槛 | 最高 | 高 | 高 | 最低 |
+| 一年后能干嘛 | 给引擎/芯片厂商提 PR | 给框架生态提 PR | 复现论文、LoRA 微调 | 独立交付 Agent 产品 |
+| 与本教程的对应 | （延伸学习） | （延伸学习） | 第 3-4 章的"造"侧 | 第 5-9 章全部 |
 
-### 11.6 怎么选：结合 DevOps 背景的路线建议
+### 11.7 怎么选：结合 DevOps 背景的路线建议
 
-三条线不是互斥的，但**主攻方向按下述优先级**：
+四条线不是互斥的，但**主攻方向按下述优先级**：
 
 ```text
 最优主攻：Agent 开发
@@ -1457,12 +1711,14 @@ print(f"通过率: {score:.0%}")
   理由③  本仓库的 Skill/规则/工作流实践就是 Agent 工程的日常
 
 建议辅修：模型开发的"应用侧"
-  LoRA 微调 + RAG 调优（11.3 的 Demo 入门即可）——
+  LoRA 微调 + RAG 调优（11.4 的 Demo 入门即可）——
   让你从"只会调 API"升级为"懂模型脾气的应用工程师"
 
-了解即可：算子开发
-  掌握 11.2 的概念（memory-bound、KV Cache、量化）——
-  足够你在选型时看懂 vLLM 配置参数、和推理团队对话；深入只在转 HPC 时再学
+了解即可：算子开发 / 框架开发
+  掌握 11.2/11.3 的概念（memory-bound、KV Cache、量化、
+  Dispatcher、torch_npu、MindSpore）——
+  足够你在选型时看懂 vLLM 配置参数、评估国产芯片适配方案、
+  和推理团队对话；深入只在转 HPC 或进芯片公司时再学
 ```
 
 ---
