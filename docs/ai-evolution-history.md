@@ -1170,6 +1170,8 @@ OpenAI Codex CLI / Gemini CLI / Cursor Agent / GitHub Copilot Agent——形态�
 
 学完前 10 章自然会问：**"我想吃 AI 这碗饭，该从哪一层入手？"** 行业内其实是四条完全不同的职业，技术栈几乎不重叠。本章把四者的工作内容、技术实现、学习路径彻底讲清——其中算子层覆盖英伟达 CUDA 与昇腾 Ascend C 两条栈，框架层以 PyTorch 技术内幕与国产框架（torch_npu/MindSpore）为主线。
 
+本章不止于"讲清楚是什么"，四条路线各附一张**分阶段学习路线图**：阶段目标 → 具体动手任务 → 验收标准，并给出"没有 GPU / 没有昇腾卡也能起步"的替代环境方案；11.8 给出通用的"学会的标准"。目标是让你照着走能真正学会，而不是看完只记得几个名词。
+
 ### 11.1 四层技术栈全景：它们各自站在哪一层
 
 ```text
@@ -1398,6 +1400,55 @@ extern "C" __global__ __aicore__ void add_custom(GM_ADDR x, GM_ADDR y, GM_ADDR z
 | 国产路径 | ① 昇腾社区《Ascend C 开发教程》+ 跑通 CANN samples 的 Add/Softmax → ② 精读达芬奇架构（Cube/Vector/UB/双缓冲） → ③ 改写融合算子（如 RMSNorm+量化） → ④ 给 CANN / vllm-ascend 提 PR |
 | 岗位现实 | 全球极少数精英岗位，芯片公司（NVIDIA/昇腾/寒武纪）+ 头部推理引擎团队；国产芯片生态扩张期，昇腾算子岗需求逆势增长 |
 
+**从零到能干活——算子开发分阶段路线图**（每阶段都有验收标准，过不了不进下一阶段）：
+
+```text
+阶段 0：前置自检（1-2 周，不达标先回炉，别硬闯）
+  ① C++ 关：能解释 RAII / 右值引用 / std::move，写带智能指针的类不裸 new/delete
+  ② 数学关：手推 softmax 的雅可比矩阵，说清反向为什么要先减 max（数值稳定）
+  ③ PyTorch 关：说清 stride / view / reshape 三者区别（为什么 view 要求内存连续）
+  ④ 工具关：会 gdb 单步，会用 nsys / nvprof 看时间线
+  达标线：四关全过。任何一关卡住 → 先回炉，跳过这步后面全是空中楼阁
+
+阶段 1：GPU 执行模型（2-4 周，Colab 免费 T4 即可）
+  目标：理解"一个 Kernel 如何被调度到成千上万个线程上执行"
+  材料：《Programming Massively Parallel Processors》(PMPP) 第 1-5 章——公认的 CUDA 圣经
+  动手任务：
+    ① 写 4 版向量加法：单线程 → 分块 → grid-stride loop → float4 向量化访存
+    ② 每版用 cudaEvent 计时，画出"线程组织 → 数据下标"的映射图
+    ③ 手算 T4 理论带宽（约 320 GB/s），对比实测带宽算出利用率 %
+  验收标准：不看书写出 grid-stride 版；能指出利用率上不去的原因（访存没合并？）
+
+阶段 2：优化三板斧（1-2 个月）
+  目标：掌握 shared memory / 并行归约 / 向量化三大套路
+  动手任务：
+    ① 矩阵转置：naive 版 vs shared memory 版，用 nvprof 对比 bank conflict 数量
+    ② 并行归约：照 Mark Harris《Optimizing Parallel Reduction in CUDA》
+       逐版实现全部 7 个版本，每版计时画柱状图，能说出每版快在哪、瓶颈搬去了哪
+    ③ 用 Triton 写一个 fused_add_relu，体会"比 CUDA 好写但控制力弱一档"
+  验收标准：7 版归约的加速曲线能讲成一个小故事；能画图解释 bank conflict
+
+阶段 3：精读工业级算子——FlashAttention-2（1-2 个月）
+  材料：论文 Algorithm 1 + 仓库 csrc/flash_fwd_kernel.cu，带着五个问题读：
+    ① 为什么按块（Br/Bc）切？块大小怎么和 SM 的 SRAM 容量对应？
+    ② 在线 softmax 的 m/l 滚动更新公式，running max 起什么作用？
+    ③ 减去 running max 为什么就不数值溢出了？
+    ④ causal mask 怎么用"块级粗筛 + 元素级细筛"两步剪掉无用计算？
+    ⑤ 反向为什么选择重算 QK^T 而不是存中间矩阵？省下的显存在哪？
+  验收标准：合上论文能在白纸上写出 m/l 更新伪代码；
+            能回答"为什么 FA 是 memory-bound 优化的教科书案例"
+
+阶段 4：进入社区（长期）
+  动手任务：vLLM / SGLang 挑 good first issue；昇腾路线给 vllm-ascend 提 PR
+  验收标准：一个被 merge 的 PR（修文档错字 → 修小 bug → 性能优化，逐级升级）
+
+没有 GPU / 没有昇腾卡怎么办：
+  ① Colab T4 / Kaggle P100：阶段 1-2 的全部任务都够用
+  ② 昇腾：MindStudio 云端 / 昇腾社区在线实验，免装环境跑通 CANN samples
+  ③ 一张卡都没有：先纸面推——给每个 kernel 画"线程-数据映射图 + 双缓冲时序图"，
+     有环境后再验证（上面那两段 CUDA / Ascend C Demo 就是为纸面推准备的）
+```
+
 ### 11.3 框架开发：PyTorch 的技术内幕（框架层）
 
 **干什么**：开发/维护 AI 框架本身（PyTorch / MindSpore / PaddlePaddle），以及把新芯片"接进"框架生态（如华为 torch_npu 把昇腾挂进 PyTorch）。模型开发者写 `y = model(x)` 时丝般顺滑，背后是这一层把 C++ 算子、自动求导、分布式通信、图编译全部缝合好——**AI 软件栈里的"操作系统"层**。
@@ -1529,6 +1580,54 @@ torch.compile(model) 一行开启三段流水：
 | 入门路径 | ① PyTorch 官方教程 "Custom C++ and CUDA Operators" → ② 用 torch.library 复刻融合算子（如 fused RMSNorm） → ③ 读 torch.compile/Inductor 源码 → ④ 读 torch_npu / MindSpore 源码 → ⑤ 给 PyTorch / vllm-ascend 提 PR |
 | 岗位现实 | 岗位少于应用层、多于算子层；集中在芯片公司与框架团队；国产化浪潮下需求稳定，C++ 系统工程功底可从后端/嵌入式平滑迁移 |
 
+**从零到能干活——框架开发分阶段路线图**（以 PyTorch 解剖为主线，阶段 0-3 一台 CPU 笔记本就够）：
+
+```text
+阶段 0：C++ 系统工程自检（1-2 周）
+  目标：PyTorch 本体是 C++ 工程，进门先验底子
+  自检四关：
+    ① 徒手写一个 CMake 管理、含 pybind11 导出的最小项目（Python 侧能 import）
+    ② 模板 / RAII / 移动语义过关（能解释 unique_ptr 为什么不能拷贝）
+    ③ 懂动态库：-fPIC、符号可见性、运行时查找路径（rpath）
+    ④ 会用 gdb 调 C++ 侧代码（而不是只会调 Python 侧）
+  达标线：四关全过；差什么补什么（《C++ Primer》+ CMake 官方 tutorial）
+
+阶段 1：打通 Python → C++ 调用链（2 周）
+  材料：PyTorch 官方教程 "Custom C++ and CUDA Operators"
+  动手任务：
+    ① 用 torch.utils.cpp_extension.load_inline 写 C++ 版 my_add，Python 侧调通
+    ② torch._C._dispatch_dump("aten::add") 观察注册表，对照上面四层结构图
+    ③ 亲手敲一遍 torch.library Demo：define → impl("CPU") → torch.ops.myops.square_add
+  验收标准：白纸上画出 torch.add 从 Python 到 ATen kernel 的完整调用链并讲清
+
+阶段 2：复刻框架两大机制——算子注册 + 自动求导（1-2 个月）
+  动手任务：
+    ① 跟 karpathy/micrograd 手写 100 行自动求导引擎（Value 类 + backward 逆拓扑排序）
+    ② 用 torch.library 注册自定义算子并写自定义反向（自己推导求导公式）
+    ③ torch.autograd.gradcheck 数值检验你的反向公式——必须全绿
+  验收标准：gradcheck 全绿；能解释动态图的反向如何沿 autograd graph 逆拓扑序传播
+
+阶段 3：深潜二选一（2-3 个月）
+  路线 A：分布式——gloo 后端单机 4 进程 DDP（不需要多卡），
+          故意去掉 AllReduce 观察 loss 发散，理解梯度同步的必要性；
+          再看 FSDP 参数分片后显存曲线的变化
+  路线 B：图编译——设 TORCH_LOGS=output_code，
+          追一个函数经 torch.compile 后 Inductor 生成的 Triton kernel，
+          数一数比 eager 少了几次 kernel launch
+  验收标准：A 线画出 DDP 梯度分桶 + AllReduce 的时序图；
+            B 线指出 Inductor 做了哪些算子融合
+
+阶段 4：接上国产栈 + 社区（长期）
+  动手任务：clone torch_npu，找算子注册宏，
+            追"同一个 aten 算子如何路由到 NPU 实现"
+            （对照上面 Dispatcher 讲解 + 寄居式 vs 自研两条路线）
+  验收标准：能回答"华为为什么做 torch_npu 插件而不是 fork PyTorch"；
+            给 MindSpore / vllm-ascend / CANN 提一个 PR
+
+环境说明：阶段 0-3 全程 CPU 即可（load_inline / gloo / gradcheck 都不要 GPU）；
+         只有查看 Inductor 生成的 GPU 代码时才需要 Colab T4
+```
+
 ### 11.4 模型开发：训练大脑的模型层
 
 **干什么**：决定模型"聪明与否"的全部工序——数据配方、预训练架构、后训练对齐。工作产出是**权重文件**（一堆数字），本质是"大规模数据 + 大规模实验科学"。
@@ -1608,6 +1707,48 @@ model.print_trainable_parameters()
 | 入门路径 | ① Karpathy 的 nanoGPT（从零手写 GPT）→ ② 复现经典论文（LoRA/DPO）→ ③ nanoGPT 上做消融实验 → ④ 开源模型社区贡献 → ⑤ 实验室/大厂训练岗 |
 | 岗位现实 | 主要在头部大厂和实验室；竞争极烈但开源生态让"业余可入门"，LoRA 微调已成为应用工程师的普及技能 |
 
+**从零到能干活——模型开发分阶段路线图**（业余可走通：0.5B 级模型 + Colab/Kaggle 即可起步）：
+
+```text
+阶段 0：手推反向传播（硬门槛，不能跳）
+  自检三关：
+    ① 手推 softmax + 交叉熵复合函数的梯度（含数值稳定技巧）
+    ② 手推 LayerNorm 的梯度
+    ③ 不看资料默写 CausalSelfAttention（Q/K/V/mask/scale 的每一行）
+  卡住 = 第 3 章需要回炉；这一步不达标，后面所有"调参"都是玄学
+
+阶段 1：nanoGPT 从零到收敛（1-2 个月）
+  材料：Karpathy《Let's build GPT from scratch》视频 + nanoGPT 仓库
+  动手任务：
+    ① 先盲写 model.py / train.py，再对照 nanoGPT 找差距（差距就是你的盲区清单）
+    ② Shakespeare 字符级数据训到收敛（loss < 1.5，能生成像样的莎翁体）
+    ③ 消融实验：去掉 dropout / 换激活函数 / 改 context length 各训一次，记录曲线
+  验收标准：能解释训练曲线上每个"台阶"（warmup、decay、过拟合拐点）的成因
+
+阶段 2：预训练的"科学"侧（1-2 个月）
+  动手任务：
+    ① 用 nanoGPT 训 3 种模型规模，拟合 Chinchilla Scaling Law L(N)=aN^b，
+      用拟合出的曲线外推"参数翻倍 loss 能降多少"
+    ② 数据工程：fineweb 子集做 MinHash 去重、按域名调配比，对比去重前后 loss
+  验收标准：能回答"给定固定算力预算，先堆数据还是先堆参数"（用你的曲线说话）
+
+阶段 3：后训练三板斧（1-2 个月）
+  动手任务：
+    ① SFT：用 trl 的 SFTTrainer 在自建 1000 条指令数据上微调 0.5B 模型
+    ② LoRA 消融：只调 q_proj vs 调 q/k/v/o 全部，对比效果与可训参数量
+    ③ DPO：跑通偏好对训练，观察 chosen/rejected 的 reward margin 曲线
+    ④ lm-evaluation-harness：微调后 vs 基座模型跑分对比
+  验收标准：一份"改动 → 指标"对照表（不是"感觉变好了"，是有数字的）
+
+阶段 4：可复现 + 社区（长期）
+  动手任务：训练仓库整理到"clone 即复现"（固定 seed、数据 hash、配置快照），
+            README 写清每步指标；给开源模型仓库提 issue / PR
+  验收标准：陌生人 clone 后能一键跑通你的训练脚本
+
+环境说明：0.5B 级 SFT / LoRA 在 Colab T4（16GB）可完成；
+         nanoGPT 规模实验用 Kaggle 每周免费 GPU 时长凑
+```
+
 ### 11.5 Agent 开发：构建产品的应用层
 
 **干什么**：在模型 API 之上，把第 5-9 章的全部技术（RAG / 工具 / 上下文工程 / 护栏 / 评测）组装成**能可靠完成业务任务的系统**。不训模型、不碰 GPU——产出是产品代码。
@@ -1683,6 +1824,49 @@ print(f"通过率: {score:.0%}")
 | 入门路径 | ① 用 API 复刻本教程 5.3/6.4 的 Demo → ② 读一个开源 Harness 源码（Aider/OpenHands）→ ③ 给自己业务做 Evals → ④ 上手 MCP Server/Skill 开发 → ⑤ 产品化 |
 | 岗位现实 | 需求量最大、增长最快的方向；门槛最低但"做好"很难——竞争在工程与评测，不在模型 |
 
+**从零到能干活——Agent 开发分阶段路线图**（前 9 章就是地基，四条线里最快走通的一条）：
+
+```text
+阶段 0：地基自检（第 5-9 章就是为这条路设计的）
+  自检三关：
+    ① asyncio 协程会写（Agent 并发调用工具的底子）
+    ② 能手写一个带约束的 JSON Schema（结构化输出的底子）
+    ③ 第 5-9 章 Demo 全部跑通过（RAG / Loop / MCP / Skill / Harness）
+  没跑通的先跑通，再往下走
+
+阶段 1：改造三件套（2-4 周）
+  动手任务：
+    ① 5.3 的 RAG：换成你自己的语料，调 chunk 大小 / overlap 做对比实验
+    ② 6.4 的 Agent Loop：加一个新工具（比如 kubectl），
+       体会 docstring 措辞对模型调用准确率的影响——这就是上下文工程
+    ③ 第 7 章的 MCP Server：真的配置进 Claude Code（.mcp.json）日常使用
+  验收标准：三件套各留一份"改动前后效果对比"记录
+
+阶段 2：评测驱动（1 个月）——Agent 工程的分水岭
+  动手任务：
+    ① 给自己的场景建 golden set：50 条"输入 → 期望行为"测试对
+    ② 每次改 prompt / 换模型 / 加工具都跑一遍，记录"改动 → 指标"因果表
+    ③ 失败用例永久保留进回归集，修复后从失败清单移除才算数
+  验收标准：一份数字化改进报告（改前 X% → 改后 Y%，每条改动可归因）
+
+阶段 3：读 Harness 源码（1-2 个月）
+  材料：Aider（Python，体量小）或 OpenHands（功能全），带四个问题读：
+    ① 系统提示词是怎么组织的？为什么这样分节？
+    ② 工具执行结果怎么回填给模型？超长时怎么截断？
+    ③ 上下文快满时的压缩策略是什么？哪些信息先丢？
+    ④ 它的 Evals 架在什么 CI 上？测什么指标？
+  验收标准：四个问题都能回答；给该仓库提一个被 merge 的 PR（从修文档起步）
+
+阶段 4：独立交付（DevOps 背景的护城河）
+  动手任务：完整走一遍——需求 → golden set → MVP → Evals 报告 →
+            容器化 → K8s 部署 → 监控面板
+  差异化：把 Evals 挂进 CI（改 prompt 自动跑评测，不过线不许合并）——
+          "AI 工程 + DevOps"这套组合拳，纯算法背景做不出来
+  验收标准：一个线上可访问、有监控、有回归评测守护的 Agent 服务
+
+环境说明：全程不需要 GPU——API 调用 + 本仓库的 K8s / CI 环境即可
+```
+
 ### 11.6 四条开发路线全维度对比
 
 | 维度 | 算子开发 | 框架开发 | 模型开发 | Agent 开发 |
@@ -1719,6 +1903,57 @@ print(f"通过率: {score:.0%}")
   Dispatcher、torch_npu、MindSpore）——
   足够你在选型时看懂 vLLM 配置参数、评估国产芯片适配方案、
   和推理团队对话；深入只在转 HPC 或进芯片公司时再学
+```
+
+### 11.8 学会的标准与练习方法论（四条路线通用）
+
+四张路线图怎么走才不会走成"看过"？三条铁律 + 六级自测，四条路线全部适用。
+
+**三条铁律**：
+
+```text
+① 输出倒逼输入：每学一个知识点强制产出——写笔记 / 写代码 / 讲给别人。
+   只有输入没有输出的学习，30 天后残留率不足一成
+② 不跑实验的结论都是猜："我觉得 shared memory 版更快"不算数，
+   必须是"实测 3.2ms → 1.1ms，nvprof 显示 bank conflict 清零"。
+   四条路线全部如此：改了就测，测了才信
+③ 卡住 30 分钟就停：把"我具体卡在哪一步"写成一句话再继续。
+   写不出来的卡住 = 该回炉上一阶段；写得出来的卡住 = 精准提问的钥匙
+   （学会描述自己的困惑，本身就是一种工程能力）
+```
+
+**掌握度六级自测**：
+
+```text
+L1 能复述 —— 合上资料能用自己的话说出"是什么"
+L2 能画图 —— 能推导 / 画出原理图（数据流、调用链、时序）
+L3 能跑通 —— 亲手在环境里把它跑起来
+L4 能改造 —— 改出变体并解释改动带来的差异 ← 四张路线图的验收线都在这一级
+L5 能讲明白 —— 能给不懂的人讲明白（费曼检验）
+L6 能纠错 —— 能看出别人实现里的 bug 与性能问题（面试 / 贡献社区的水平）
+
+规则：主攻方向的核心知识点必须到 L4 以上。
+      只到 L2 的叫"科普级"——这就是"看懂了"和"学会了"的分界线，
+      也是本章每张路线图都设"验收标准"的原因。
+```
+
+**用 AI 学 AI 的正确姿势**（本仓库工作流即为此设计）：
+
+```text
+错误问法："给我讲讲 FlashAttention"
+  → 得到的是 L1-L2 的科普，收藏了等于会了（并不会）
+
+正确问法（四级递进）：
+  ① 先自己到 L3：把代码跑起来，别让 AI 代劳
+  ② 再问具体卡点："FA2 里 m_new = max(m_old, row_max)，
+     为什么不直接用全局 max？"——此时 AI 的回答才能真正进入你的知识
+  ③ 让 AI 出题考你："出 5 道检验我是否真懂在线 softmax 的题"
+  ④ 用 Evals 思维管理学习：每学完一节写自测条目，定期回头验收——
+     你管理 Agent 质量的方法，就是管理自己学习质量的方法
+
+本章本身就是证据：它用与本仓库一致的
+"学习 → 总结 → 落盘 → PR"工作流迭代而成，
+你看到的每一版都是"输出 → 反馈 → 修正"循环的产物。
 ```
 
 ---
