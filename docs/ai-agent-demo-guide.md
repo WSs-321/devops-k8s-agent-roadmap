@@ -260,6 +260,8 @@ print(ask("上海今天天气怎么样，适合跑步吗"))
 
 运行后能观察到模型先返回 `get_weather(city="上海")`，拿到 `22℃ 晴` 后才组织出"适合跑步"的最终回答——这就是第 1 章循环的真实发生过程。
 
+一个生产级细节：`json.loads(call.function.arguments)` 没人保证是合法 JSON，`TOOL_IMPL[...]` 也没人保证工具名一定存在——模型偶发抽风时上面这段会直接崩。生产要 try/catch 兜底，捕获后回填一条"参数格式错误"的 role=tool 消息让模型自我纠正，demo 从简不做。
+
 ### 3.3 工具设计三原则
 
 - 单一职责：一个工具只做一件事，宁可多定义几个；
@@ -474,7 +476,11 @@ app.post("/chat", async (req, res) => {
 app.listen(3000, () => console.log("http://localhost:3000 就绪"));
 ```
 
-跑起来三步：`npm install express openai` → 设置环境变量 `LLM_KEY`（PowerShell 用 `$env:LLM_KEY="sk-xxx"`，bash 用 `export LLM_KEY=sk-xxx`）→ `node server.js`，用 `curl -N -X POST localhost:3000/chat -H "content-type: application/json" -d "{\"question\":\"你好\"}"` 验证 SSE 是否逐段吐字。
+跑起来三步：`npm install express openai` → 设置环境变量 `LLM_KEY`（PowerShell 用 `$env:LLM_KEY="sk-xxx"`，bash 用 `export LLM_KEY=sk-xxx`）→ `node server.js`，再用下面的命令验证 SSE 是否逐段吐字。注意请在 Git Bash / macOS / Linux 终端执行——PowerShell 里 `curl` 是 `Invoke-WebRequest` 的别名，且 JSON 引号规则完全不同，别在 PowerShell 里折腾：
+
+```bash
+curl -N -X POST localhost:3000/chat -H "content-type: application/json" -d '{"question":"你好"}'
+```
 
 取舍：要快速验证用 A，要产品级体验用 B。B 的前提是已备案的 HTTPS 域名（流程一至数周，尽早启动）。
 
