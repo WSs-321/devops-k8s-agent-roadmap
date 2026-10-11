@@ -66,16 +66,37 @@ while True:
 
 ### 2.3 最小可跑实现
 
-不依赖任何向量库和框架，`pip install openai numpy` 即可跑通：
+不依赖任何向量库和框架，`pip install openai numpy` 装依赖，再备好下面的 `faq.json`（12 条样例已够跑通全部演示，之后整体替换成自己的知识即可）：
+
+```json
+[
+  {"q": "怎么申请退货退款？", "a": "签收后 7 天内，在「我的订单」选择对应订单点「申请售后-退货退款」，填写原因并寄回商品。商品需保持吊牌完整、未洗涤使用。"},
+  {"q": "退货的运费由谁承担？", "a": "7 天无理由退货，寄回运费由买家承担；商品存在质量问题或发错货，运费由卖家承担，可先垫付后凭运费单据报销。"},
+  {"q": "退货多久能收到退款？", "a": "仓库签收并验收通过后，1 个工作日内原路退回；银行卡到账一般再需 1-7 天，以银行处理时间为准。"},
+  {"q": "支持换货吗？", "a": "质量问题支持 15 天内换货：在「我的订单」申请售后选择「换货」，同款优先补发；无货时协调退货退款。"},
+  {"q": "怎么申请开发票？", "a": "下单页可勾选电子发票，订单完成后 24 小时内发送到预留邮箱；漏开的可联系客服凭订单号补开，支持补开的有效期为 1 年。"},
+  {"q": "下单后什么时候发货？", "a": "现货商品 48 小时内发货；预售商品以下单页标注的发货时间为准；大促期间可能延迟 1-2 天，延迟会在订单页通知。"},
+  {"q": "怎么修改收货地址？", "a": "未发货前可在「我的订单-订单详情-修改地址」自助修改；已发货订单无法修改地址，可联系快递员协商转寄。"},
+  {"q": "怎么查询物流信息？", "a": "在「我的订单-查看物流」实时展示快递公司与轨迹；发货后超 48 小时无物流更新，可联系客服催查。"},
+  {"q": "商品有质量问题怎么办？", "a": "签收后 15 天内拍照上传问题凭证，在订单页申请「质量问题」售后；审核通过后免费退货退款或换货，运费由卖家承担。"},
+  {"q": "支持货到付款吗？", "a": "暂不支持货到付款，支持微信、支付宝及主流银行卡在线支付。"},
+  {"q": "怎么联系人工客服？", "a": "APP 内「我的-客服中心」输入「转人工」接入；服务时间 9:00-21:00，其余时间可留言，客服上班后 2 小时内回复。"},
+  {"q": "怎么取消订单？", "a": "未发货前可在「我的订单-订单详情」点「取消订单」，款项原路秒退；已发货订单需拒收或签收后走退货流程。"}
+]
+```
+
+主程序：
 
 ```python
 import json
 import numpy as np
 from openai import OpenAI
 
-# 任意 OpenAI 兼容端点均可；模型名以所用平台文档为准
-client = OpenAI(api_key="sk-xxx", base_url="https://api.example.com/v1")
-CHAT_MODEL = "deepseek-chat"
+# OpenAI 兼容端点均可；注意 DeepSeek 官方暂不提供 embedding 接口，而 RAG 必须要
+# embedding，故这里用阿里百炼一家配齐"聊天 + 向量"两件套；换平台只改这三行
+client = OpenAI(api_key="sk-xxx",
+                base_url="https://dashscope.aliyuncs.com/compatible-mode/v1")
+CHAT_MODEL = "qwen-plus"
 EMBED_MODEL = "text-embedding-v3"
 
 faq = json.load(open("faq.json", encoding="utf-8"))  # [{"q": "...", "a": "..."}]
@@ -105,6 +126,8 @@ def answer(question, top_k=3):
 
 print(answer("买了东西想退货怎么办"))
 ```
+
+填上自己的 key 后 `python chat.py`：输出应是 `faq.json` 第 1 条的退货流程，而不是模型的自由发挥——检索命中它，回答就只基于它。
 
 ### 2.4 多轮对话：自动识别追问所指
 
@@ -357,79 +380,184 @@ const client = new OpenAI({ apiKey: process.env.LLM_KEY }); // key 只存在于�
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
+const MAX_TURNS = 10;                             // 会话只留最近 10 轮，防上下文爆掉
+
+// 会话存云数据库集合 sessions：{ _id: sessionId, messages: [...] }
+async function loadHistory(sessionId) {
+  const res = await db.collection("sessions").doc(sessionId).get()
+    .catch(() => null);                            // 查不到文档 = 新会话
+  return res?.data?.messages ?? [];
+}
+
+async function saveHistory(sessionId, question, answer) {
+  const messages = await loadHistory(sessionId);
+  messages.push({ role: "user", content: question },
+                { role: "assistant", content: answer });
+  if (messages.length > MAX_TURNS * 2) messages.splice(0, messages.length - MAX_TURNS * 2);
+  await db.collection("sessions").doc(sessionId).set({ data: { messages } }); // 有则覆盖
+}
 
 exports.main = async (event) => {
   const { question, sessionId } = event;
-  const history = await loadHistory(db, sessionId);      // 会话存云数据库
+  const history = await loadHistory(sessionId);   // 会话存云数据库
   const resp = await client.chat.completions.create({
-    model: "deepseek-chat",
+    model: "deepseek-chat",                       // 云函数只做纯聊天，DeepSeek 即可
     messages: [...history, { role: "user", content: question }],
   });
-  await saveHistory(db, sessionId, question, resp.choices[0].message.content);
+  await saveHistory(sessionId, question, resp.choices[0].message.content);
   return { answer: resp.choices[0].message.content };
 };
 ```
 
+部署要点：云函数目录内 `npm install wx-server-sdk openai`；key 配在云函数环境变量 `LLM_KEY`，不要写进代码；`config.json` 把超时设到平台允许的最大值（生成动辄 5-20 秒，默认超时根本不够）。
+
 - 优点：免域名、免备案、免服务器，前端 `wx.cloud.callFunction` 直连，周末就能上线；
 - 代价：无法真流式（云函数是请求-响应模式，超时上限也有限），等待 5-20 秒只能转圈。
+
+前端对应调用（对照 6.5 的流式版，这里是一次性返回）：
+
+```javascript
+wx.cloud.callFunction({ name: "chat", data: { question, sessionId: "demo-user" } })
+  .then((res) => this.setData({ answer: res.result.answer })); // 等待后整段出现
+```
 
 方案 B——自建服务（真流式体验）：
 
 ```javascript
-// Node/Express：SSE 流式回传，前端用 enableChunked 逐段收
+// server.js —— 依赖安装后直接启动，跑通后是第 8 章路线的第 3 步产出
+const express = require("express");
+const OpenAI = require("openai");
+const client = new OpenAI({ apiKey: process.env.LLM_KEY }); // key 只在环境变量里
+
+const app = express();
+app.use(express.json());
+
+// 内存版会话存储：重启即清空，demo/自用足够；生产换 Redis 或数据库
+const sessions = new Map();
+const MAX_TURNS = 10;
+
+function buildMessages(sessionId, question) {
+  const history = sessions.get(sessionId) ?? [];
+  history.push({ role: "user", content: question });
+  if (history.length > MAX_TURNS * 2) history.splice(0, history.length - MAX_TURNS * 2);
+  return history;                                 // 引用同一数组，流完回填一次即可
+}
+
 app.post("/chat", async (req, res) => {
   res.set({
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache",
     Connection: "keep-alive",
   });
-  const messages = await buildMessages(req.body);      // 鉴权/限流后拼会话
-  const stream = await client.chat.completions.create({
-    model: "deepseek-chat", stream: true, messages,
-  });
-  for await (const chunk of stream) {
-    const text = chunk.choices[0]?.delta?.content ?? "";
-    res.write(`data: ${JSON.stringify({ text })}\n\n`); // SSE 格式：data: 开头
+  try {
+    const { question = "", sessionId = "default" } = req.body;
+    const messages = buildMessages(sessionId, question); // 生产在此步前加鉴权与限流
+    const stream = await client.chat.completions.create({
+      model: "deepseek-chat", stream: true, messages,
+    });
+    let full = "";                                // 累积全文，流完才有完整答案
+    for await (const chunk of stream) {
+      const text = chunk.choices[0]?.delta?.content ?? "";
+      if (text) full += text;
+      res.write(`data: ${JSON.stringify({ text })}\n\n`); // SSE 格式：data: 开头
+    }
+    messages.push({ role: "assistant", content: full }); // 本轮答案进历史
+    sessions.set(sessionId, messages);
+    res.write("data: [DONE]\n\n");
+  } catch (e) {                                   // 错误也走 SSE 通道，前端才能收到
+    res.write(`data: ${JSON.stringify({ error: String(e) })}\n\n`);
+  } finally {
+    res.end();
   }
-  res.write("data: [DONE]\n\n");
-  res.end();
 });
+
+app.listen(3000, () => console.log("http://localhost:3000 就绪"));
 ```
+
+跑起来三步：`npm install express openai` → 设置环境变量 `LLM_KEY`（PowerShell 用 `$env:LLM_KEY="sk-xxx"`，bash 用 `export LLM_KEY=sk-xxx`）→ `node server.js`，用 `curl -N -X POST localhost:3000/chat -H "content-type: application/json" -d "{\"question\":\"你好\"}"` 验证 SSE 是否逐段吐字。
 
 取舍：要快速验证用 A，要产品级体验用 B。B 的前提是已备案的 HTTPS 域名（流程一至数周，尽早启动）。
 
 ### 6.5 前端流式接收
 
-`wx.request` 不支持浏览器式的 EventSource，需要用 `enableChunked`（基础库 2.20.2+）分块接收：
+`wx.request` 不支持浏览器式的 EventSource，需要用 `enableChunked`（基础库 2.20.2+）分块接收。下面是聊天页完整核心代码（`pages/chat/chat.js`），本节末尾两个坑已在代码里直接解决：
 
 ```javascript
-const task = wx.request({
-  url: "https://api.example.com/chat",
-  method: "POST",
-  enableChunked: true,                 // 关键开关：分块接收响应
-  header: { "content-type": "application/json" },
-  data: { question, sessionId },
-  success: () => {},
-});
-let buffer = "";
-task.onChunkReceived((res) => {
-  buffer += decodeUTF8(res.data);      // ArrayBuffer 转字符串，见下方坑 1
-  const lines = buffer.split("\n");
-  buffer = lines.pop();                // 最后一段可能不完整，留到下一块
-  for (const line of lines) {
-    if (!line.startsWith("data:")) continue;
-    const payload = line.slice(5).trim();
-    if (payload === "[DONE]") return;
-    const { text } = JSON.parse(payload);
-    this.setData({ answer: this.data.answer + text }); // 打字机效果
+// pages/chat/chat.js —— 与 6.4 方案 B 的 server.js 联调
+const API = "https://api.example.com"; // 本地联调改 http://localhost:3000，见本节末
+
+function utf8Decode(bytes) {           // 手写 UTF-8 解码：iOS 端没有 TextDecoder
+  let out = "", i = 0;
+  while (i < bytes.length) {
+    const b = bytes[i];
+    let len, cp;
+    if (b < 0x80)                 { len = 1; cp = b; }
+    else if ((b & 0xe0) === 0xc0) { len = 2; cp = b & 0x1f; }
+    else if ((b & 0xf0) === 0xe0) { len = 3; cp = b & 0x0f; }
+    else                          { len = 4; cp = b & 0x07; }
+    for (let j = 1; j < len; j++) cp = (cp << 6) | (bytes[i + j] & 0x3f);
+    out += String.fromCodePoint(cp);
+    i += len;
   }
+  return out;
+}
+
+Page({
+  data: { question: "", answer: "" },
+  onInput(e) { this.setData({ question: e.detail.value }); },
+
+  onSend() {
+    const question = this.data.question.trim();
+    if (!question) return;
+    this.setData({ answer: "" });                 // 新一轮，清空打字机区域
+    let pending = new Uint8Array(0);              // 字节缓冲：应对坑 2 的残段
+    const task = wx.request({
+      url: `${API}/chat`,
+      method: "POST",
+      enableChunked: true,                        // 关键开关：分块接收响应
+      header: { "content-type": "application/json" },
+      data: { question, sessionId: "demo-user" },
+      fail: () => this.setData({ answer: "网络异常，请重试" }),
+    });
+    task.onChunkReceived((res) => {
+      const incoming = new Uint8Array(res.data);
+      const merged = new Uint8Array(pending.length + incoming.length);
+      merged.set(pending);
+      merged.set(incoming, pending.length);
+      let start = 0;
+      for (let i = 0; i < merged.length; i++) {
+        if (merged[i] !== 0x0a) continue;         // 0x0A 即换行符：一行的完整边界
+        const line = utf8Decode(merged.slice(start, i)).trim();
+        start = i + 1;
+        if (!line.startsWith("data:")) continue;
+        const payload = line.slice(5).trim();
+        if (payload === "[DONE]") return;         // 流结束
+        const { text, error } = JSON.parse(payload);
+        if (error) { this.setData({ answer: "服务异常：" + error }); return; }
+        this.setData({ answer: this.data.answer + text }); // 打字机效果
+      }
+      pending = merged.slice(start);              // 不完整的残段留到下一块
+    });
+  },
 });
 ```
 
-两个必踩的坑：
+页面结构（`pages/chat/chat.wxml`，不写样式也能跑）：
 
-- 坑 1（解码）：部分基础库没有 `TextDecoder`，需引入 polyfill（如 fast-text-encoding），或手写 UTF-8 解码；
-- 坑 2（截断）：chunk 边界可能把一个多字节汉字切成两半，直接逐块 decode 必然乱码——正确做法就是上面这样：先缓冲、按完整 SSE 行解析、残段留到下一块。
+```xml
+<view style="padding: 24rpx;">
+  <view style="min-height: 300rpx;">{{answer || "向 AI 助手提问…"}}</view>
+  <textarea value="{{question}}" bindinput="onInput" placeholder="输入问题" />
+  <button bindtap="onSend">发送</button>
+</view>
+```
+
+本地联调：微信开发者工具「详情 → 本地设置」勾选「不校验合法域名」，`API` 改为 `http://localhost:3000` 即可直连 6.4 方案 B 的 server.js 看到打字机效果；上线前必须换回备案过的 HTTPS 域名，并在小程序后台配置 request 合法域名。
+
+两个必踩的坑（上面代码里的对应解法）：
+
+- 坑 1（解码）：微信 iOS 端的 JavaScriptCore 运行时没有 `TextDecoder`（安卓的 V8 才有）——跨端统一用 `utf8Decode` 手写实现，或引入 fast-text-encoding polyfill；
+- 坑 2（截断）：chunk 边界可能把一个多字节汉字切成两半，逐块 decode 必然乱码——正确做法是按**字节**缓冲（不能转字符串），找到换行符（0x0A）切出完整行再整体解码，残段留到下一块。
 
 ## 7. 小程序落地：技术难点与合规清单
 
