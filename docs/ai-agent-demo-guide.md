@@ -106,11 +106,68 @@ def answer(question, top_k=3):
 print(answer("买了东西想退货怎么办"))
 ```
 
-### 2.4 生产化要点
+### 2.4 多轮对话：自动识别追问所指
+
+单轮版跑通后马上会撞上多轮问题：用户先问"买了东西想退货怎么办"，接着追问"那运费谁出"——把这句直接拿去向量检索必然失败，"那"在向量空间里没有语义，命中不了任何知识。所谓"自动识别追问所指"，标准解法是**检索前先改写**：让 LLM 结合最近历史，把追问改写成一个独立完整的问题，再去检索。
+
+以下代码基于 2.3 的 `client`、`embed`、`faq_vecs` 继续写：
+
+```python
+def rewrite(question, history):
+    """结合历史把追问改写成独立完整的问题——多轮检索的关键"""
+    if not history:
+        return question                          # 第一轮没有指代，直接检索
+    resp = client.chat.completions.create(
+        model=CHAT_MODEL,
+        messages=[
+            {"role": "system",
+             "content": "结合对话历史，把用户最新问题改写成独立完整、不含指代词（这/那/它）的问题。只输出改写后的问题。"},
+            *history[-6:],                       # 只带最近 3 轮：指代一般就在近处
+            {"role": "user", "content": question},
+        ],
+    )
+    return resp.choices[0].message.content
+
+def retrieve(question, top_k=3):                 # 检索逻辑从 2.3 的 answer() 抽出
+    q_vec = embed([question])[0]
+    sims = faq_vecs @ q_vec / (np.linalg.norm(faq_vecs, axis=1) * np.linalg.norm(q_vec))
+    return [faq[i] for i in sims.argsort()[-top_k:][::-1]]
+
+def chat(question, history):
+    """多轮版客服：history 由调用方维护，格式同 OpenAI 的 messages"""
+    search_q = rewrite(question, history)        # ① "那运费谁出" → "退货的运费谁出"
+    context = "\n\n".join(f"问：{h['q']}\n答：{h['a']}" for h in retrieve(search_q))
+    resp = client.chat.completions.create(
+        model=CHAT_MODEL,
+        temperature=0.1,
+        messages=[
+            {"role": "system",
+             "content": "你是官方客服。只依据下面的知识回答；知识里没有的就明确说不知道，禁止编造。\n\n" + context},
+            *history,                            # ② 生成时带上完整原历史
+            {"role": "user", "content": question},  # ③ 注意用原始问题，不用改写版
+        ],
+    )
+    return resp.choices[0].message.content
+
+history = []
+for q in ["买了东西想退货怎么办", "那运费谁出呢"]:   # 追问带指代，单轮版在这里必然翻车
+    a = chat(q, history)
+    history += [{"role": "user", "content": q}, {"role": "assistant", "content": a}]
+    print("用户：", q, "\n客服：", a, "\n")
+```
+
+四个要点：
+
+- 为什么不把历史直接拼进检索词？长拼接会稀释语义，向量检索对"独立完整的问题"最敏感——改写是给检索器看的，不是给生成器看的；
+- 生成时要用原始问题而不是改写版：改写只服务于检索，回答时靠原历史保住语气、上下文和用户真正的问法；
+- 改写只带最近 3 轮（`history[-6:]`）：长会话全量带进去 token 爆炸，而指代一般只出现在最近几轮；
+- 这套"先改写再检索"各框架都已内置：LangChain 的 CondenseQuestionChain、LlamaIndex 的 CondenseQuestionChatEngine 干的就是这件事——手写一遍，用框架时才知道它内部发生了什么。
+
+### 2.5 生产化要点
 
 - 提示词里写死"没有依据就说不知道"，这是客服场景防幻觉的生死线；
 - 高频问题可以只检索 top-1、相似度超过阈值就直接返回，跳过 LLM——省钱、零幻觉、毫秒级响应；
-- 生产还差四件事：多轮上下文（追问"那运费谁出"时要带上历史）、检索质量优化（分段、重排）、转人工兜底、敏感词过滤。
+- 生产还差三件事：检索质量优化（分段、重排）、转人工兜底、敏感词过滤。
 
 ## 3. Demo 二：查阅工具助手（Function Calling 型）
 
