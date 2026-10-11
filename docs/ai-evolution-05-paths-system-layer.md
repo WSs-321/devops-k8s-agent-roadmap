@@ -81,7 +81,7 @@ FlashAttention（2022，目前一切推理引擎的标配）三板斧：
    效果：显存减半再减半，INT4 时 70B 模型可塞进单卡消费级显卡
 ```
 
-**Demo：Triton 写一个最简单的 GPU 算子（可运行）**
+#### Demo：Triton 写一个最简单的 GPU 算子（可运行）
 
 ```python
 # pip install triton torch
@@ -111,7 +111,7 @@ assert torch.allclose(gpu_add(x, y), x + y)
 # 真实的 FlashAttention/RMSNorm/RoPE 就是这种 kernel 的复杂版
 ```
 
-**国产平行世界：昇腾 Ascend C 算子开发（同一个问题，另一套硬件）**
+#### 国产平行世界：昇腾 Ascend C 算子开发（同一个问题，另一套硬件）
 
 CUDA 是英伟达世界的算子语言；在华为昇腾 NPU 的世界里，对应物叫 **Ascend C**。两者解决的问题一模一样——把数学运算变成芯片上的并行程序——但硬件设计思路不同，写法随之分叉。国产芯片放量后，这套技能在昇腾生态里被完整复刻：
 
@@ -139,7 +139,7 @@ Ascend C 编程范式 —— 与 CUDA 的三大差异：
   ③ 固定三段式：CopyIn(GM→UB) → Compute(硬件指令) → CopyOut(UB→GM)
 ```
 
-**Demo：Ascend C 版向量加法（需昇腾卡 + CANN 工具链，看结构与 CUDA 的对照为主）**
+#### Demo：Ascend C 版向量加法（需昇腾卡 + CANN 工具链，看结构与 CUDA 的对照为主）
 
 ```cpp
 // 开发流程：写 .cpp 算子 → msopgen 生成工程骨架 → 编译成 .run 部署
@@ -310,7 +310,7 @@ extern "C" __global__ __aicore__ void add_custom(GM_ADDR x, GM_ADDR y, GM_ADDR z
 硬件算子：CPU(OpenMP) / GPU(cuBLAS+cuDNN+自定义CUDA) / NPU(CANN)
 ```
 
-**核心技术一：Dispatcher —— "一套 API 跑遍所有芯片"的秘密**
+#### 核心技术一：Dispatcher —— "一套 API 跑遍所有芯片"的秘密
 
 ```python
 # Demo：亲眼看一次算子分发（可运行，纯 CPU 即可）
@@ -324,7 +324,7 @@ print(torch._C._dispatch_dump("aten::add"))
 # 关键洞察：新芯片厂商不改 PyTorch 一行代码，只需"往表里注册自己的算子"
 ```
 
-**核心技术二：自定义算子注册（torch.library）—— 框架扩展的标准姿势**
+#### 核心技术二：自定义算子注册（torch.library）—— 框架扩展的标准姿势
 
 vLLM 把 PagedAttention kernel 挂进 PyTorch、torch_npu 把昇腾算子挂进 PyTorch、FlashAttention 变成 `torch.ops.flash_attn`——全部走这一个入口：
 
@@ -354,7 +354,7 @@ print(torch.ops.myops.square_add(x, y))   # tensor([11., 24., 39.])
 #   用户：    训练代码一行不改 —— 这就是框架层的核心价值：解耦
 ```
 
-**核心技术三：autograd 自动微分 —— 框架的灵魂**
+#### 核心技术三：autograd 自动微分 —— 框架的灵魂
 
 ```text
 模型开发者"只写 forward，不写 backward"，谁在替他求导？
@@ -367,7 +367,7 @@ print(torch.ops.myops.square_add(x, y))   # tensor([11., 24., 39.])
   ← 这正是第 3 章手推 Attention 的意义：框架替你做的每一步，你都亲手验证过
 ```
 
-**核心技术四：分布式训练的框架侧实现（DDP / FSDP）**
+#### 核心技术四：分布式训练的框架侧实现（DDP / FSDP）
 
 ```text
 DDP（数据并行的教科书实现，面试必背）：
@@ -383,7 +383,7 @@ FSDP（单卡放不下整个模型时的完全分片方案）：
   ← 11.4 模型开发里的 ZeRO/FSDP 概念，在框架层就是这样落地的
 ```
 
-**核心技术五：torch.compile / Inductor —— PyTorch 2.0 的编译革命**
+#### 核心技术五：torch.compile / Inductor —— PyTorch 2.0 的编译革命
 
 ```text
 动态图（eager 模式）好写但慢：每次算子都过一遍 Python + Dispatcher，无法全局优化
@@ -395,7 +395,7 @@ torch.compile(model) 一行开启三段流水：
 趋势：算子内部是 HPC（11.2），算子之间的"胶水"正从 Python 走向编译器
 ```
 
-**国产框架与芯片适配（框架层的"中国战场"）**
+#### 国产框架与芯片适配（框架层的"中国战场"）
 
 ```text
 路线一：寄居 PyTorch 生态 —— 芯片公司的主流打法
