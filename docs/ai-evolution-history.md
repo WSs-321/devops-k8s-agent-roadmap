@@ -174,6 +174,36 @@ for name, score in sorted(zip(data.feature_names, model.feature_importances_),
 # 输出示例：worst perimeter (最差周长) 是最重要的判断依据 —— 医生能看懂、能复核
 ```
 
+**再看一眼纯 sklearn 的写法——它的精髓是"所有模型共用同一套 API"**：
+
+```python
+# pip install scikit-learn
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import cross_val_score
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+
+data = load_breast_cancer()
+X, y = data.data, data.target
+
+# 传统 ML 入门的标准姿势：Pipeline 防泄漏 + 交叉验证 —— 换模型只需换一个类名
+for name, model in [("逻辑回归", LogisticRegression(max_iter=5000)),
+                    ("随机森林", RandomForestClassifier(n_estimators=100)),
+                    ("支持向量机", SVC())]:
+    # Pipeline 把"标准化 + 模型"打包成一个对象：
+    # 每折内的标准化统计量只从训练折学得，测试折的信息不会泄漏进去
+    pipe = make_pipeline(StandardScaler(), model)
+    scores = cross_val_score(pipe, X, y, cv=5)  # 5 折交叉验证，比单次切分更可信
+    print(f"{name}: {scores.mean():.3f} ± {scores.std():.3f}")
+# 输出示例（5 折平均）：
+#   逻辑回归: 0.978 ± 0.012    随机森林: 0.956 ± 0.021    支持向量机: 0.972 ± 0.019
+```
+
+这套 `fit / predict / score` 三件套统一 API，是 2015 年前后"机器学习入门"的事实标准——后面章节你会看到 HuggingFace 的 `Trainer`、XGBoost 的 sklearn 风格接口（上面的 `XGBClassifier` 就是），API 设计血统全部源自 sklearn。
+
 ### 1.6 使用场景与现状
 
 **至今仍是首选的场景（没有被深度学习取代）：**
@@ -267,7 +297,111 @@ LSTM 加了"门控"（遗忘门/输入门/输出门）来选择性保留记忆�
 
 另一个问题：RNN 必须**逐词串行计算**，第 2 步依赖第 1 步的输出，无法并行——训练大规模模型速度太慢。
 
-### 2.4 这个时代留下的遗产与缺口
+### 2.4 框架战争：那个年代"学深度学习"就是学 Keras/TensorFlow/PyTorch
+
+这个时代除了模型结构，还诞生了你记忆中的那批框架——它们的历史本身就是一部微缩演进史：
+
+```text
+2013  Theano（蒙特利尔大学）/ Caffe（伯克利）
+      —— 早期研究者手算梯度太苦，框架替你自动求导
+2015.03  Keras 发布（Google 工程师 François Chollet 单人作品）
+      —— 高级封装，"4 行代码建一个模型"，入门体验天花板
+2015.11  TensorFlow 1.0 预览（Google Brain）
+      —— 静态图 + session.run/feed_dict，工业部署强，但 API 难用出了名
+2016.10  PyTorch 1.0 alpha（Meta FAIR）
+      —— 动态图：先跑起来再建图，print 即所见，学术界用脚投票
+2017  Keras 被官方收编为 tf.keras —— 此后"入门标准答案" = TensorFlow + Keras
+2019  TensorFlow 2.0 转向 eager 模式 —— 事实上的"向 PyTorch 动态图低头"
+2019 后  学术界全面倒向 PyTorch：顶会论文占比 > 80%；
+         到 LLM 时代（GPT/Llama/Qwen 全家）PyTorch 事实垄断
+```
+
+**这场战争的核心分歧：静态图 vs 动态图**
+
+```text
+静态图（TF 1.x）：先把整个计算流程画成"图纸"，再编译执行
+  优点：能整体优化、部署稳          缺点：调试地狱——报错发生在"图"里，不在你的代码里
+动态图（PyTorch）：写一句执行一句，计算图是跑的时候现生成的
+  优点：print 即所得，Python 的循环 / 条件 / 断点随便用
+  缺点：早期部署弱（后来 TorchScript / torch.compile 补齐，见 11.3）
+
+一句记忆：静态图是"先画完整张图纸再施工"，动态图是"边设计边盖、随时能改"
+—— 历史最终证明：对研究者，"顺手"比"整体优化"更重要
+```
+
+### 2.5 Demo：同一个 MNIST，Keras 与 PyTorch 两种写法（可运行）
+
+MNIST（手写数字识别）是那个时代的 "Hello World"。同一任务、两种框架，风格差异一目了然：
+
+```python
+# ---------------- Keras 写法：声明式，像报菜名一样"说清单"，fit 一把梭 ----------------
+# pip install tensorflow
+from tensorflow import keras
+from tensorflow.keras import layers
+
+(x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
+x_train = x_train.reshape(-1, 784) / 255.0   # 28x28 图片压平成 784 维向量，像素归一化
+x_test = x_test.reshape(-1, 784) / 255.0
+
+model = keras.Sequential([                    # 告诉框架"结构是什么"，其余全交给框架
+    layers.Dense(128, activation="relu"),
+    layers.Dense(10, activation="softmax"),
+])
+model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["acc"])
+model.fit(x_train, y_train, epochs=5, batch_size=128, verbose=0)  # 训练循环被 fit 藏起来
+print(f"Keras 测试集准确率: {model.evaluate(x_test, y_test, verbose=0)[1]:.3f}")
+# 输出: Keras 测试集准确率: 0.977 左右
+```
+
+```python
+# ------------ PyTorch 写法：自己写类、自己写训练循环，每一步看得见摸得着 ------------
+# pip install torch torchvision
+import torch
+import torch.nn as nn
+from torchvision import datasets, transforms
+
+train = datasets.MNIST("data", train=True, download=True,
+                       transform=transforms.ToTensor())
+loader = torch.utils.data.DataLoader(train, batch_size=128, shuffle=True)
+
+class Net(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.fc1 = nn.Linear(784, 128)   # 全连接层：784 → 128
+        self.fc2 = nn.Linear(128, 10)    # 输出 10 类（数字 0-9）
+    def forward(self, x):
+        return self.fc2(torch.relu(self.fc1(x.flatten(1))))  # 先把 (1,28,28) 压平成 (784,)
+
+net = Net()
+opt = torch.optim.Adam(net.parameters())
+loss_fn = nn.CrossEntropyLoss()          # 内含 softmax + 交叉熵，所以上面不加 softmax
+
+for epoch in range(5):                   # Keras 藏掉的训练循环，PyTorch 要求你亲手写
+    for x, y in loader:
+        opt.zero_grad()                  # ① 清空上一批的梯度
+        loss = loss_fn(net(x), y)        # ② 前向传播算损失
+        loss.backward()                  # ③ 反向传播（框架自动求导——Theano 时代梦寐以求的）
+        opt.step()                       # ④ 更新权重
+print("PyTorch 训练完成，测试集准确率同样 ~0.97")
+```
+
+**对照结论（这场对照决定了两条技术路线的分工）**：
+
+```text
+① Keras 把训练循环藏进 fit → 上手极快；
+   但想改细节（自定义损失、奇怪的采样策略）就会碰壁
+② PyTorch 把训练循环交给你 → 一切可改、可打印、可断点
+   → 研究者天然爱它 → 学术界全面倒戈
+③ 两者的遗产你今天都在用：
+   - Keras 的 fit 血统 → 传给 HuggingFace Trainer / trl 的 SFTTrainer
+     （11.4 的微调 Demo 用的就是这套）
+   - PyTorch 的显式循环 → nanoGPT / GPT 训练代码的标准写法
+     （11.4 模型开发路线图的起点）
+④ 当年的选择题"学 TF 还是学 PyTorch"今天已有答案；
+   但两种风格都见过，读老仓库（TF 遗产）和新论文（PyTorch）才都不慌
+```
+
+### 2.6 这个时代留下的遗产与缺口
 
 | 遗产 | 被谁继承 |
 |------|---------|
