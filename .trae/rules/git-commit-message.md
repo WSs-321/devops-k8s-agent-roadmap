@@ -19,6 +19,8 @@ scene: git_message
 - 生成 message 后无需向用户确认，直接执行：`git add -A`、`git commit -m "<message>"`、`git push -u origin <branch>`
 - 推送完成后，向用户回报：commit hash、message、分支名、PR 创建入口
 - 若可用 GitHub CLI，则优先创建 PR；否则提供 GitHub Compare 链接让用户创建 PR
+- PR 创建后若门禁（status checks）全部通过，直接以 squash 方式合入，无需再次向用户确认
+- 合入后自动执行 `git checkout main && git pull --ff-only` 同步本地 main，并删除已合入的本地/远端功能分支
 - 如执行失败（冲突、网络等），停止并向用户报告原因，不要重试破坏性操作
 
 ## 合并提交
