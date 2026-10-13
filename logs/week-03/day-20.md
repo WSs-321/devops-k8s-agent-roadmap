@@ -25,6 +25,6 @@ Day: Sunday
 
 ## 明日计划
 
-- Day 21 周复盘 + Day 22 K8s 基础
+- Day 21 周复盘 + Day 22 GHCR 登录
 
 ## Commit

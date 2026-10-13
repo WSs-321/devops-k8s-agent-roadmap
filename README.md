@@ -31,8 +31,17 @@
 .
 |-- README.md
 |-- ROADMAP.md
+|-- docker-compose.yml
+|-- .github/                 # workflow（ci-* / cd-* / codeql / sbom / release）与 PR、Issue 模板
+|-- app/                     # CI/CD 示例业务项目（Node.js，供 ci-node / ci-docker 构建演示）
+|-- docs/                    # 学习笔记 23 篇：Docker、GHCR 镜像流水线、CI/CD 安全、AI 演进系列
+|-- k8s/                     # K8s 实验清单：deployment / service / ingress / configmap / secret / pv-pvc / probe
+|-- logs/                    # week-01 ~ week-07 每日日志与周复盘，另含阶段复盘两篇
+|-- scripts/                 # deploy.sh、gen-release-note.sh
 |-- timetable/
 |   |-- 75-day-plan.md
+|   |-- advanced-plan.md
+|   |-- skill-matrix.md
 |   `-- weekly-milestones.md
 |-- tracks/
 |   |-- 01-github-actions-ci.md
@@ -66,6 +75,8 @@
 3. 每完成一个项目，按 `projects/` 中的验收标准自测。
 4. 每天至少提交一次 commit，保留学习过程。
 5. 第 6 周后开始建立单独的 `agent-platform` 仓库，逐步实现 Agent MVP。
+6. 每周复盘时对照 `timetable/skill-matrix.md` 自查技能等级，只认有证据（日志 / 文档 / PR）支撑的等级。
+7. 完成 75 天主线后，按 `timetable/advanced-plan.md` 进入 76-100 天进阶（Terraform、可观测性、发布策略、K8s 安全、SRE）。
 
 ## 最终产出
 

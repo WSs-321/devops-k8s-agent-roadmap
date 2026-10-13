@@ -39,7 +39,7 @@ Day: Monday
 
 ## 下周计划
 
-- K8s 基础（Day 22-28）：kubectl、Pod/Deployment、Service/Ingress、ConfigMap/Secret、Volume/PV/PVC
+- GHCR 与镜像流水线（Day 22-28）：GHCR 登录、build-push-action、镜像元数据、Trivy 扫描、失败回放
 
 ## Commit
 
