@@ -112,7 +112,7 @@ CMD ["/myapp"]
 构建工具和运行时分离，最终镜像只包含必要文件。
 
 | 方式 | 典型体积 |
-|---|---|
+| --- | --- |
 | 单阶段（node:22 + 全部依赖） | ~900 MB |
 | 多阶段（node:22-slim 只含运行） | ~200 MB |
 | 多阶段（Go scratch） | ~10 MB |
@@ -200,7 +200,7 @@ CMD ["/main"]
 ## 什么时候用多阶段？
 
 | 场景 | 推荐 |
-|---|---|
+| --- | --- |
 | 编译型语言（Go、C、C++、Rust） | 强烈推荐 |
 | 需要编译的前端项目（React、Vue 构建） | 推荐 |
 | Node.js 有构建步骤（TypeScript 编译、打包） | 推荐 |
@@ -215,7 +215,7 @@ CMD ["/main"]
 Docker 官方维护了 3 个常用 action：
 
 | Action | 用途 |
-|---|---|
+| --- | --- |
 | docker/login-action | 登录镜像仓库 |
 | docker/build-push-action | 构建并推送镜像 |
 | docker/metadata-action | 自动生成镜像标签和元数据 |
@@ -261,7 +261,7 @@ steps:
 Node 官方镜像有三种：
 
 | 镜像 | 大小 | 说明 |
-|---|---|---|
+| --- | --- | --- |
 | `node:22` | ~1.1 GB | 完整版，包含开发工具 |
 | `node:22-alpine` | ~140 MB | Alpine 精简版 |
 | `node:22-slim` | ~200 MB | Debian slim 版 |
