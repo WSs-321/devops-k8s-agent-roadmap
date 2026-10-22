@@ -36,6 +36,47 @@ scene: learning_flow
 - 推完后向用户回报：commit hash、message、分支名、PR URL。
 - 失败立即停止并报告原因，不重试破坏性操作。
 
+## 每日日志模板（`logs/week-XX/day-NN.md`）
+
+新建每日日志必须严格套用以下骨架，一级章节固定为七个，不得增删或调整顺序：
+
+```markdown
+# Daily Log
+
+Date: YYYYMMDD
+Day: <星期英文，如 Tuesday>
+
+## 今日目标
+
+- 当日要学习 / 产出的内容
+
+## 实际完成
+
+- 实际完成的内容；主题较多时用 ### 小节展开
+
+## 遇到的问题
+
+- 无
+
+## 解决方式
+
+- 无
+
+## 明日计划
+
+- 下一 Day 的学习主题（以 timetable/75-day-plan.md 为准）
+
+## Commit
+
+- `<type>: <中文摘要>`
+```
+
+- 第一行固定 `# Daily Log`，禁止写成 `# Day NN: 标题` 之类；日期与 Day 信息只放在 Date / Day 两行。
+- `Date` 统一八位紧凑格式 `YYYYMMDD`（与 week-01~03 历史日志一致），`Day` 统一英文星期名（Monday…Sunday）。
+- `实际完成` 下允许用 `###` 小节展开主题；`今日收获` 不单独设一级章节，并入 `实际完成` 或 `解决方式`。
+- 周复盘日（Day 21 / 28 / 35 / 42 …）沿用同一骨架，`实际完成` 以索引式条目指向 `week-XX.md`，参考 week-03/day-21.md。
+- 某节确实无内容时写 `- 无`，不得整节省略（day-46/47 缺"遇到的问题 / 解决方式"、day-48/49 缺 Date / Day 均属历史不一致，新日志不再沿用）。
+
 ## 强制约束
 
 - 全程**禁止跳过"总结 review"**；用户没有点头就不准动文件、不准建分支。
@@ -48,6 +89,7 @@ scene: learning_flow
 
 - [ ] 总结里列出的文件路径用户已确认
 - [ ] 文件内容符合 [markdownlint 配置](file:///d:/project/devops-k8s-agent-roadmap/.markdownlint.json) 且与既有 `docs/docker-*.md` 风格一致
+- [ ] 日志符合"每日日志模板"（H1、Date / Day、七节齐全且顺序正确）
 - [ ] commit message ≤ 10 字、含 day 信息
 - [ ] 分支名 `feature_<摘要>`，从最新 `main` 拉出
 - [ ] `gh pr create` 已成功并拿到 PR URL 回显
