@@ -217,7 +217,7 @@ extern "C" __global__ __aicore__ void add_custom(GM_ADDR x, GM_ADDR y, GM_ADDR z
 同一个算子（向量加）在两条技术栈上的概念逐项对照：
 
 | 概念 | CUDA（英伟达） | Ascend C（昇腾） |
-|------|--------------|----------------|
+| ------ | -------------- | ---------------- |
 | 并行主体 | 海量 Thread（SIMT） | AI Core（核内分块 + 流水） |
 | 片上内存 | shared memory | Unified Buffer（UB） |
 | 全局内存 | global memory（HBM） | Global Memory（HBM） |
@@ -230,7 +230,7 @@ extern "C" __global__ __aicore__ void add_custom(GM_ADDR x, GM_ADDR y, GM_ADDR z
 **技能画像与学习路径**：
 
 | 项目 | 内容 |
-|------|------|
+| ------ | ------ |
 | 核心语言 | CUDA / Triton / Ascend C / C++ / Python |
 | 知识内核 | GPU/NPU 架构（SM/AI Core/SRAM/HBM/寄存器）、roofline 模型（判读 compute-bound 还是 memory-bound）、并行归约、warp 调度、双缓冲流水 |
 | 数学要求 | 数值优化、矩阵分块策略（线代必须极扎实） |
@@ -458,7 +458,7 @@ torch_npu 解决的只是"单卡能跑"（算子路由）；而千亿参数模�
 **技能画像与学习路径**：
 
 | 项目 | 内容 |
-|------|------|
+| ------ | ------ |
 | 核心语言 | C++（主力）/ Python（API 层与测试） |
 | 知识内核 | C++ 工程（模板/RAII/智能指针）、编译原理基础、PyTorch 源码结构（ATen/Dispatcher/autograd/Tensor 内存模型）、通信原语（NCCL/HCCL） |
 | 入门路径 | ① PyTorch 官方教程 "Custom C++ and CUDA Operators" → ② 用 torch.library 复刻融合算子（如 fused RMSNorm） → ③ 读 torch.compile/Inductor 源码 → ④ 读 torch_npu / MindSpore 源码 → ⑤ 给 PyTorch / vllm-ascend 提 PR |

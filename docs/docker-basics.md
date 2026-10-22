@@ -54,7 +54,7 @@ Dockerfile --docker build--> Image --docker run--> Container
 ```
 
 | 概念 | 含义 |
-|---|---|
+| --- | --- |
 | Dockerfile | 构建镜像的说明书 |
 | Image | 构建出来的只读模板 |
 | Container | 镜像运行起来后的实例 |
@@ -116,7 +116,7 @@ ${{ github.sha }}
 常见场景：
 
 | 触发方式 | `github.sha` 指向 |
-|---|---|
+| --- | --- |
 | `push` | 被 push 的最新 commit |
 | `workflow_dispatch` | 手动选择分支的当前 HEAD |
 | `pull_request` | GitHub 生成的临时 merge commit |
@@ -147,7 +147,7 @@ docker run -d \
 ## 6. 常用 docker run 参数
 
 | 参数 | 含义 | 示例 |
-|---|---|---|
+| --- | --- | --- |
 | `-d` | 后台运行 | `docker run -d nginx` |
 | `--name` | 指定容器名 | `docker run --name web nginx` |
 | `-p` / `--publish` | 手动端口映射 | `-p 8080:80` |
@@ -337,7 +337,7 @@ docker exec -it 容器名 sh
 对比：
 
 | 命令 | 含义 |
-|---|---|
+| --- | --- |
 | `docker run --rm -it --entrypoint sh 镜像名` | 用镜像新建临时容器并启动 shell |
 | `docker exec -it 容器名 sh` | 进入已经运行中的容器 |
 
@@ -350,7 +350,7 @@ exec: "sh": executable file not found in $PATH
 ## 11. ENTRYPOINT 和 CMD
 
 | 项 | ENTRYPOINT | CMD |
-|---|---|---|
+| --- | --- | --- |
 | 角色 | 主程序 | 默认参数 |
 | 覆盖方式 | `--entrypoint` | `docker run 镜像 参数...` |
 | 常见用途 | 固定应用入口 | 给入口提供默认参数 |
@@ -394,7 +394,7 @@ docker run -d \
 常见策略：
 
 | 策略 | 含义 |
-|---|---|
+| --- | --- |
 | `no` | 默认，不自动重启 |
 | `always` | 总是重启，手动停止后 Docker 重启也会拉起 |
 | `unless-stopped` | 除非手动停止，否则自动重启 |
@@ -484,7 +484,7 @@ DevToolsActivePort file doesn't exist
 `--memory` 和 `--shm-size` 区别：
 
 | 参数 | 控制对象 | 作用 |
-|---|---|---|
+| --- | --- | --- |
 | `--memory` / `-m` | 容器总内存上限 | 限制容器最多能用多少 RAM |
 | `--shm-size` | `/dev/shm` 共享内存区域 | 限制共享内存文件系统大小 |
 
@@ -555,7 +555,7 @@ resources:
 ```
 
 | 字段 | 作用 |
-|---|---|
+| --- | --- |
 | `requests.memory` | 调度依据，告诉调度器 Pod 至少需要多少内存 |
 | `limits.memory` | 运行上限，超过会 OOMKilled |
 
@@ -582,7 +582,7 @@ docker run -d \
 ```
 
 | 参数 | 含义 |
-|---|---|
+| --- | --- |
 | `--health-cmd` | 健康检查命令 |
 | `--health-interval` | 检查间隔 |
 | `--health-timeout` | 超时时间 |
@@ -607,7 +607,7 @@ docker run -d \
 含义：
 
 | 参数 | 含义 |
-|---|---|
+| --- | --- |
 | `--log-driver json-file` | 使用默认 JSON 日志驱动 |
 | `--log-opt max-size=10m` | 单个日志文件最大 10MB |
 | `--log-opt max-file=3` | 最多保留 3 个日志文件 |
@@ -640,7 +640,7 @@ docker run -d --name api --network app-net my-api
 ## 19. 安全相关参数
 
 | 参数 | 含义 | 建议 |
-|---|---|---|
+| --- | --- | --- |
 | `--privileged` | 特权模式，几乎拥有宿主机高级权限 | 慎用 |
 | `--cap-add` | 增加 Linux capability | 按需添加 |
 | `--cap-drop` | 删除 capability | 推荐最小权限 |
