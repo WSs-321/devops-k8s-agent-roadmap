@@ -34,7 +34,7 @@
 |-- docker-compose.yml
 |-- .github/                 # workflow（ci-* / cd-* / codeql / sbom / release）与 PR、Issue 模板
 |-- app/                     # CI/CD 示例业务项目（Node.js，供 ci-node / ci-docker 构建演示）
-|-- docs/                    # 学习笔记 23 篇：Docker、GHCR 镜像流水线、CI/CD 安全、AI 演进系列
+|-- docs/                    # 学习笔记 24 篇：Docker、GHCR 镜像流水线、CI/CD 安全、AI 演进系列、岗位差距分析
 |-- k8s/                     # K8s 实验清单：deployment / service / ingress / configmap / secret / pv-pvc / probe
 |-- logs/                    # week-01 ~ week-07 每日日志与周复盘，另含阶段复盘两篇
 |-- scripts/                 # deploy.sh、gen-release-note.sh
