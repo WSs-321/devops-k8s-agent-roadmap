@@ -5,8 +5,8 @@
 本文基于三类证据交叉验证：
 
 1. 仓库本身的实际产出（workflow、YAML、文档、日志，截至 Day 49 / Week 7）。
-2. 30+ 条互联网 / 云厂商 / AI 公司真实 JD 样本（招聘挂牌信息，随时可能下线）。
-3. 公开市场数据（CNCF 年度报告、招聘平台薪资页、研究机构报告，口径见第 10 节）。
+2. 10 条可在线验证的真实 JD 直链（字节跳动、美团、阿里云、上海人工智能实验室等招聘官网及挂牌平台，2026-11 检索，见第 3.3 节）。
+3. 公开市场数据（CNCF 2024/2026 年度报告、Mordor Intelligence、挂牌薪资页，口径与链接见第 9-10 节）。
 
 ## 1. 结论摘要
 
@@ -14,7 +14,7 @@
 | --- | --- | --- | --- |
 | 云原生运维 / DevOps 工程师 | ★★★★☆ | **主投** | CI/CD 与容器证据最扎实，缺真实部署闭环和排障记录 |
 | 平台工程 / 研发效能 | ★★★★☆ | **主投** | Environments、门禁、模板化能力对口，缺多语言 CI 与真实用户 |
-| SRE（稳定性 / 可观测性） | ★★☆☆☆ | **冲刺** | 缺可观测性全套、SLO/on-call/故障演练，硬门槛 3-5 年 |
+| SRE（稳定性 / 可观测性） | ★★☆☆☆ | **冲刺** | 缺可观测性全套、SLO/on-call/故障演练；门槛多为 3-5 年（上海 AI Lab 有 1-3 年窗口） |
 | AIOps / DevOps Agent | ★★★☆☆ | **冲刺（潜力最大）** | 学习路线覆盖 LLM/Agent 全概念，但零代码落地，是当前最大机会缺口 |
 | MLOps / AI 平台工程 | ★★☆☆☆ | 备选 | 需要 GPU/K8s 调度与训练管线经验 |
 | 云原生平台研发（Go/K8s 二开） | ★☆☆☆☆ | 暂缓 | 要求生产级 Go 与 K8s 内部机制，短期补不齐 |
@@ -60,14 +60,16 @@
 
 | 岗位类别 | 典型雇主（互联网为主） | 核心职责 | 与本仓库的关系 |
 | --- | --- | --- | --- |
-| DevOps / 云原生运维 | 电商、本地生活、出行（滴滴等）、SaaS 公司 | 流水线建设、K8s 运维、发布、成本 | Week 1-7 直接对口 |
+| DevOps / 云原生运维 | 美团（本地生活）、华泰保险（传统行业转型）、SaaS 公司 | 流水线建设、K8s 运维、发布、成本 | Week 1-7 直接对口 |
 | 平台工程 / 研发效能 | 大厂效能团队、字节火山引擎等 | 内部 CI/CD 平台、模板化、开发者体验 | Environments/门禁/模板思路对口 |
-| SRE / 稳定性 | 字节、月之暗面、滴滴、智元机器人等 | SLO、可观测、on-call、容量、变更管控 | Week 13-15 计划，未落地 |
-| AIOps / 智能运维 | 字节智能运维、阿里、腾讯、电信系 | 告警收敛、根因定位、异常检测 | 与 Agent MVP 计划强相关 |
-| DevOps Agent / Agentic Ops | 字节火山引擎、BOSS 直聘、润建等 | LLM+运维工具链、MCP 编排、RCA | `tracks/06` + `project-04` 计划，未落地 |
-| MLOps / AI 平台 | AI 独角兽、智元（GPU 集群） | 训推平台、GPU 调度、模型交付 | 部分重叠（K8s+CI/CD 底座） |
+| SRE / 稳定性 | 上海人工智能实验室（含 1-3 年窗口岗）、GoDaddy（海外对照） | SLO、可观测、on-call、容量、变更管控 | Week 13-15 计划，未落地 |
+| AIOps / 智能运维 | 华泰保险（JD 明确要求 LLM 日志排障） | 告警收敛、根因定位、异常检测 | 与 Agent MVP 计划强相关 |
+| DevOps Agent / Agentic Ops | 字节火山引擎、美团、阿里云（Qoder） | LLM+运维工具链、MCP 编排、RCA | `tracks/06` + `project-04` 计划，未落地 |
+| MLOps / AI 平台 | AI 独角兽、上海人工智能实验室（GPU 算力集群） | 训推平台、GPU 调度、模型交付 | 部分重叠（K8s+CI/CD 底座） |
 
-### 3.2 JD 高频硬要求归纳（30+ 条样本）
+### 3.2 JD 高频硬要求归纳（基于第 3.3 节 10 条可验证 JD）
+
+> 频率为 10 条样本中的出现占比，样本量小，**仅作趋势参考，不代表全市场统计**；每条样本的原文链接见第 3.3 节。
 
 | 能力项 | 出现在 JD 中的频率 | 本仓库现状 |
 | --- | --- | --- |
@@ -85,25 +87,28 @@
 | LLM / Agent / RAG / MCP / Function Calling | AIOps/Agent 岗 100% | 概念文档 ✅，代码 ❌ |
 | CKA/CKAD/CKS 等认证 | 约 30%（"加分"） | ❌ |
 
-### 3.3 真实 JD 样本摘录（脱敏，挂牌信息随时可能下线）
+### 3.3 可验证的真实 JD 样本（实名 + 直链）
 
-| 来源类型 | 岗位 | 挂牌薪资 | 年限 | 硬要求关键词 |
-| --- | --- | --- | --- | --- |
-| 互联网出行大厂 | 云原生平台研发 | 未标 | 3 年+ | Golang、K8s 二次开发、蓝绿/金丝雀、镜像管理 |
-| 互联网出行大厂 | SRE | 未标 | 3 年+ | Go/Java/Python、可观测、容量、变更管控、AIOps 经验优先 |
-| 大模型独角兽（北京） | 高级 SRE | 35-50K·16薪 | 5 年+ | SLO、ArgoCD、Prometheus 全家桶、OTel、on-call、postmortem |
-| 大厂智能运维（杭州） | 大模型应用 | 未标 | 硕士起 | LLM/Agent、ReAct/RAG/MCP、根因定位、异常检测 |
-| 大厂云部门（杭州） | DevOps Agent 研发 | 未标 | 2 年+后端 | 生产级 LLM/Agent、MCP、向量检索、human-in-the-loop、AIOps/RCA |
-| 招聘平台公司（沪杭） | Agentic Ops | 未标 | - | 智能告警、根因定位、预案推荐、效果评估、人工确认、安全兜底 |
-| 机器人独角兽（上海） | SRE 与可观测平台 | 25-50K·15薪 | 3 年+ | SLI/SLO、GitOps、GPU 集群加分、OTel |
-| 传统 IT 转型（深圳） | IT AIOps | 1.5-3 万 | 2 年+ | Function Call/RAG、Prometheus/ELK/K8s、LLMOps、Dify/LangChain |
-| 综合（猎聘样本） | 云平台运维（DevOps） | 15-25K·13薪 | 3 年+ | K8s/Helm/Operator、Terraform/Ansible、Prometheus/Loki、SRE 思维 |
-| 综合（智联样本） | DevOps 工程师 | 1.8-2.8 万 | 3 年+ | Linux、K8s RBAC/Helm、微服务、Bash/Python/Go、IaC、ELK |
+> 以下 10 条均为 2026-11-19 检索可访问的招聘官网 / 挂牌平台直链，**挂牌信息随时可能下线，以链接当时内容为准**；薪资为挂牌值，非承诺。
 
-样本给出的两个关键信号：
+| 岗位（公司） | 地点 / 薪资 / 年限 | 核心要求 | 来源 |
+| --- | --- | --- | --- |
+| DevOps Agent 研发工程师 - 火山引擎（字节跳动） | 杭州 / 2 年+ 后端 | Go/Python/Java、生产级 LLM/Agent、Prompt/Function Calling/MCP/多轮推理、RAG/向量检索/知识图谱/Memory（ES/Milvus/Neo4j）；JD 原文"分级自治（human-in-the-loop→半自动→全自动）"与本仓库 `tracks/06` L0-L5 模型一致 | [字节招聘官网](https://jobs.bytedance.com/experienced/position/detail/7616589439938562357) |
+| AI Agent 开发工程师（美团） | 北京 / 成都 / 5 年+ | 大模型推理、Prompt Engineering、Agent Loop、Tool Use、MCP、RAG、上下文工程、模型评估、Neo4j/Milvus、AIOps 实践加分 | [美团招聘](https://zhaopin.meituan.com/web/position/detail?highlightType=social&jobUnionId=4119654480) |
+| AI Agent 研发工程师（harness 方向）- Qoder（阿里云） | 杭州 / 2 年+ | TS/Python/Go、Agent Loop/工具调用/推理规划/记忆/多智能体、Prompt/Context Engineering、评测与失败归因 | [阿里云招聘](https://careers.aliyun.com/off-campus/position-detail?positionId=100004083014) |
+| Agent 开发工程师（上海人工智能实验室） | 上海 / 社招 | Python、Linux、Docker、RAG/Tool Use/ReAct/CoT/工作流编排/记忆/状态管理、Agent 评测体系 | [上海 AI Lab](https://www.shlab.org.cn/joinus/detail/7686149294239467814) |
+| 智能体开发工程师（上海人工智能实验室） | 上海 / 5 年+ 架构 | 模型网关/多模型路由、Function Calling、RAG、多智能体编排/沙箱/插件/OTel、SRE 思维、LLMOps | [上海 AI Lab](https://www.shlab.org.cn/joinus/detail/7699017036320950537) |
+| 云原生 & 算力集群 SRE（上海人工智能实验室） | 上海 / **1-3 年**（入门窗口证据） | K8s 核心组件原理、容器/镜像/PV/PVC/污点容忍、Docker/containerd、独立搭建 Prometheus/Grafana/ELK/Jaeger、Go/Python、GPU 集群/CKA/CKS 加分 | [上海 AI Lab](https://www.shlab.org.cn/joinus/detail/7678621698992949514) |
+| SRE 运维开发工程师（猎聘挂牌） | 北京 / 30-40K / 5-10 年 | K8s(HPA/RBAC/NetworkPolicy)+Helm/Kustomize+ACK、Nacos/RocketMQ/Redis/ES、Prometheus 全家桶+OTel、SLO/SLI、Jenkins/GitLab CI/ArgoCD、arthas/tcpdump/kubectl debug、CKA/CKAD/ACP | [猎聘](https://www.liepin.com/a/80927155.shtml) |
+| SRE 工程师（华泰保险，智联挂牌） | 广州 / 1.5-2 万 / 3-5 年 | K8s/Docker/Helm、GitOps(ArgoCD/Tekton)、Python、Terraform/Ansible、**用 LLM/Copilot 做日志分析与故障排查**（传统行业也要 LLM 运维的证据） | [智联招聘](https://m.zhaopin.com/jobs/CC000594630J40910498702.htm) |
+| SRE 岗位职责聚合（职友集，3 份样本） | 全国 / 30-50K | 阿里云 ECS/ACK/SLB/OSS/RDS/VPC/云监控、Jenkins、GitOps、Terraform/Ansible、SLI/SLO/SLA | [职友集](https://www.jobui.com/gangwei/sre+engineer/) |
+| Senior SRE（GoDaddy，海外对照） | Remote India / 7 年+ | Ansible、Linux、K8s、Terraform、Python、GitHub Actions、on-call、SLI/SLO、Loki/Mimir/Grafana、Vault | [Built In](https://builtin.com/job/senior-site-reliability-engineer/12097768) |
 
-1. **3 年是中级岗分水岭**，但"3 年经验"在互联网公司更接近"能力要求"而非硬性年限——有真实项目证据的 1-2 年候选人同样能过简历关。
-2. **AIOps/Agent 岗的 JD 语言与本仓库 `tracks/06` + `project-04` 的设计语言几乎重合**（human-in-the-loop、guardrails、效果评估），说明路线设计是对的，只差"做出来"。
+样本给出的三个关键信号：
+
+1. **入门窗口真实存在**：上海人工智能实验室"云原生 & 算力集群 SRE"明确招 **1-3 年**，且硬要求（K8s 核心组件 + 自建 Prometheus/Grafana/ELK/Jaeger）与本仓库 Week 8/13 计划完全对齐——这是当前最值得冲刺的真实入口。
+2. **学习路线被业界 JD 验证**：字节"DevOps Agent 研发"JD 原文"分级自治（human-in-the-loop→半自动→全自动）"与本仓库 `tracks/06` 的 L0-L5 权限模型几乎一致；美团 / 阿里云 / 上海 AI Lab 的 Agent 岗要求（MCP、RAG、Tool Use、评测归因）与 `project-04` 设计语言重合，路线是对的，只差"做出来"。
+3. **LLM + 运维已下沉为通用要求**：连华泰保险（传统行业）的 SRE JD 都明确要求"探索 LLM 在日志分析、故障排查的应用"，说明 AIOps 不是互联网专属，而是全行业基线。
 
 ## 4. 能力差距矩阵
 
@@ -131,21 +136,21 @@
 
 数据口径：均为公开挂牌/报告样本，**不构成就业承诺**，仅用于方向判断。
 
-| 数据点 | 数值 | 来源 | 对本仓库的含义 |
+| 数据点 | 数值 | 来源（可点击验证） | 对本仓库的含义 |
 | --- | --- | --- | --- |
-| 云原生采用率 | 89% 组织在使用 | CNCF《Cloud Native 2024》报告（2025 年发布） | 云原生技能是普适底座，不是加分项 |
-| 生产环境容器使用 | 91% | 同上 | K8s 运维需求长期存在 |
-| 生产 CI/CD 使用增长 | +31% | 同上 | CI/CD 是 JD 高频项的结构性原因 |
-| 遵循 GitOps 原则的组织 | 77% | 同上 | Argo CD/Kustomize 是中高级 JD 必考的原因 |
-| DevOps 全经验平均月薪 | 约 1.35 万；3-5 年约 1.76 万；北京 3-5 年约 3.16 万 | 猎聘 DevOps 薪资页（挂牌样本） | 3 年是薪资跳档点，与技能矩阵目标吻合 |
-| SRE 招聘职位量 | 2026 年样本 1,501 个，68.3% 岗位 20-50K/月，36.7% 要求 5-10 年 | 职友集 SRE 职位页 | SRE 量少门槛高，印证"冲刺"定位 |
-| 全球 AIOps 市场 | 2026 年约 189.5 亿美元 → 2031 年约 377.9 亿美元，CAGR 约 14.8%，亚太最快 | Mordor Intelligence | AIOps 是增速最快的方向，人才池尚未饱和 |
-| 网络安全与 IT 运维人才缺口 | 全球约 350 万 | 同上引用行业口径 | "云原生+AI"复合人才稀缺是真实缺口 |
+| 云原生采用率（2024） | 89% 组织在使用 | [CNCF《Cloud Native 2024》PDF](https://www.cncf.io/wp-content/uploads/2025/04/cncf_annual_survey24_031225a.pdf) | 云原生技能是普适底座，不是加分项 |
+| 生产环境容器 / K8s（2024） | 容器 91%、K8s 93% | 同上 | K8s 运维需求长期存在 |
+| 生产 CI/CD 使用增长（2024） | +31%；29% 每天多次发布 | 同上 | CI/CD 是 JD 高频项的结构性原因 |
+| 遵循 GitOps 原则的组织（2024） | 77% | 同上 | Argo CD/Kustomize 是中高级 JD 必考的原因 |
+| 云原生采用率（2026 最新） | 98% 组织采用云原生；82% 容器用户在生产部署 K8s | [CNCF 2026.1 年度报告 PDF](https://www.cncf.io/wp-content/uploads/2026/01/CNCF_Annual_Survey_Report_final.pdf) | 最新口径确认云原生已近全面普及 |
+| K8s 托管生成式 AI 工作负载（2026） | 66% 组织已用 K8s 托管 GenAI；成熟组织 CI/CD 达 91% | 同上 | 直接支撑 AIOps / MLOps 方向判断，"云原生 + AI"是真实交汇点 |
+| 全球 AIOps 市场 | 2026 约 189.5 亿美元 → 2031 约 377.9 亿美元，CAGR 约 14.8%，亚太最快 | [Mordor Intelligence AIOps](https://www.mordorintelligence.com/industry-reports/artificial-intelligence-for-it-operations-aiops-market) | AIOps 增速最快，人才池尚未饱和 |
+| 挂牌薪资对比（同 SRE 方向） | 北京互联网 30-40K（5-10 年）vs 广州传统行业 1.5-2 万（3-5 年） | [猎聘挂牌](https://www.liepin.com/a/80927155.shtml) / [智联挂牌](https://m.zhaopin.com/jobs/CC000594630J40910498702.htm) | 互联网溢价显著，但传统行业门槛更低，是可进的入口 |
 
 缺口判断（综合 JD 与市场数据）：
 
 1. **存量最大**：初中级 DevOps/云原生运维——每个上规模的公司都在招，本仓库当前证据即可投。
-2. **溢价最高**：SRE 与 AIOps——薪资带宽明显高于纯运维（对比上表 JD：传统 IT AIOps 1.5-3 万 vs 大模型公司 SRE 35-50K），但都要 3 年+ 证据。
+2. **溢价最高**：SRE 与 AIOps——互联网公司薪资带宽明显高于传统行业（上表挂牌对比：北京互联网 SRE 30-40K vs 广州传统行业 SRE 1.5-2 万）；多数要求 3 年+，但存在 1-3 年入门窗口（上海 AI Lab SRE 岗，见第 3.3 节）。
 3. **结构性缺口**：懂 DevOps 又懂 LLM/Agent 的复合人才——这正是 `tracks/06` 定位，目前市场上候选人极少，是本仓库最值得投入的差异化方向。
 
 ## 6. 匹配度分级与投递策略
@@ -208,16 +213,33 @@
 
 ## 9. 风险与口径说明
 
-- 本文所有薪资均来自招聘平台**挂牌样本**（猎聘/智联/职友集/BOSS 直聘页面），实际 offer 受城市、公司、面试表现影响，不构成保证。
-- JD 样本来自 2026 年公开挂牌，存在下线与时效性；归纳的是"要求模式"而非单家公司承诺。
-- CNCF / Mordor Intelligence 数据为行业报告口径；国内部分 AIOps 市场规模数据来源可信度参差，本文未采用。
-- 匹配度评分（★）为基于 JD 对照的定性判断，服务于学习决策，不是测评结论。
+- 本文所有薪资均来自招聘平台**挂牌样本**（猎聘 / 智联 / 职友集页面，链接见第 3.3 节与第 5 节），实际 offer 受城市、公司、面试表现影响，不构成保证。
+- 第 3.3 节 10 条 JD 直链均于 **2026-11-19 检索可访问**，挂牌信息随时可能下线，失效后以招聘官网当时内容为准；归纳的是"要求模式"而非单家公司承诺。
+- 职友集"SRE 岗位职责聚合"仅 3 份样本，样本量极小，只作职责关键词参考，不作薪资 / 职位量统计依据（故第 5 节未采用其职位量数字）。
+- CNCF / Mordor Intelligence 数据为行业报告口径，链接见第 5 节与第 10 节；国内部分 AIOps 市场规模数据来源可信度参差，本文未采用。
+- 匹配度评分（★）为基于 10 条 JD 对照的定性判断，样本量小，服务于学习决策，不是测评结论。
 
 ## 10. 参考来源
 
-- CNCF - Cloud Native 2024 年度报告（2025 发布）：云原生采用率、GitOps、CI/CD 增长数据
-- 猎聘 DevOps 薪资分布页：经验段与城市薪资样本
-- 职友集 SRE 职位统计页：职位量、薪资带宽、年限分布
-- Mordor Intelligence - AIOps Market：市场规模与 CAGR
-- 招聘平台公开 JD 样本（字节/滴滴/月之暗面/智元机器人/BOSS 直聘等，2026 年挂牌）
+### JD 样本（实名直链，2026-11-19 检索可访问，挂牌可能下线）
+
+- 字节跳动火山引擎 - DevOps Agent 研发工程师：<https://jobs.bytedance.com/experienced/position/detail/7616589439938562357>
+- 美团 - AI Agent 开发工程师：<https://zhaopin.meituan.com/web/position/detail?highlightType=social&jobUnionId=4119654480>
+- 阿里云 Qoder - AI Agent 研发工程师：<https://careers.aliyun.com/off-campus/position-detail?positionId=100004083014>
+- 上海人工智能实验室 - Agent 开发工程师：<https://www.shlab.org.cn/joinus/detail/7686149294239467814>
+- 上海人工智能实验室 - 智能体开发工程师：<https://www.shlab.org.cn/joinus/detail/7699017036320950537>
+- 上海人工智能实验室 - 云原生 & 算力集群 SRE：<https://www.shlab.org.cn/joinus/detail/7678621698992949514>
+- 猎聘 - SRE 运维开发工程师：<https://www.liepin.com/a/80927155.shtml>
+- 智联招聘 - SRE 工程师（华泰保险）：<https://m.zhaopin.com/jobs/CC000594630J40910498702.htm>
+- 职友集 - SRE 岗位职责聚合（仅 3 份样本）：<https://www.jobui.com/gangwei/sre+engineer/>
+- Built In - Senior SRE（GoDaddy，海外对照）：<https://builtin.com/job/senior-site-reliability-engineer/12097768>
+
+### 市场数据报告
+
+- CNCF《Cloud Native 2024》年度报告 PDF（2025 发布）：<https://www.cncf.io/wp-content/uploads/2025/04/cncf_annual_survey24_031225a.pdf>（89% 采用、91% 容器、+31% CI/CD、77% GitOps）
+- CNCF 2026.1 年度报告《The infrastructure of AI's future》PDF：<https://www.cncf.io/wp-content/uploads/2026/01/CNCF_Annual_Survey_Report_final.pdf>（98% 采用、82% 生产 K8s、66% K8s 托管 GenAI）
+- Mordor Intelligence - AIOps Market：<https://www.mordorintelligence.com/industry-reports/artificial-intelligence-for-it-operations-aiops-market>（市场规模与 CAGR）
+
+### 仓库内部证据
+
 - 本仓库：`README.md`、`ROADMAP.md`、`timetable/75-day-plan.md`、`timetable/advanced-plan.md`、`timetable/skill-matrix.md`、`tracks/05-k8s-ack-prep.md`、`tracks/06-agent-platform.md`、`projects/project-04-agent-ci-analyzer.md`、`projects/project-05-k8s-ack-design.md`
