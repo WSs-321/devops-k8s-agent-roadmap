@@ -1,0 +1,9 @@
+week,theme,hours,deliverables,acceptance,career_gate
+W1,修复反馈回路,18-24,"修复healthz/readyz；workflow触发；CD gating；端口；最小权限；kind/minikube部署自身应用","一条命令启动；探针语义正确；Pod Ready；CI变绿；P0有回归测试","可诚实描述CI/CD与K8s基础能力"
+W2,确定性CI Failure Analyzer,18-24,"Python包；CLI；JSON Schema；日志读取；secret redaction；10个fixture；pytest","无模型也可重复运行；敏感信息不泄露；失败job/step识别可验证","形成第一个独立Agent工程证据"
+W3,LLM可替换组件,18-24,"provider adapter；timeout/retry/限流；结构化输出；token/成本/延迟记录；规则降级","无API key仍能测试；模型失败不崩溃；schema校验通过","可讲清Agent工程中的可靠性设计"
+W4,RAG Runbook,18-24,"真实Runbook；chunk/embedding/Top-K/引用/rerank；无答案拒答；检索基线","展示一次检索失败到指标改善的完整记录","可投RAG应用与Agent应用初级岗位"
+W5,只读工具调用,18-24,"GitHub API读取；工具schema；权限白名单；超时重试；审计日志；可选MCP","非法参数/权限不足/超时/空结果有可读错误；无写操作","证明Tool Calling与安全边界"
+W6,Evals与CI回归门禁,18-24,"30-50条golden set；准确率/schema/引用/泄露/P95/成本；CI阈值","prompt或模型变更可自动发现回退","达到多数AI应用JD的评测要求"
+W7,部署与可观测性,18-24,"Docker；K8s清单；探针；资源限制；结构化日志；request id；故障注入","5分钟演示；能定位人为故障；README含架构与限制","具备可演示的端到端作品"
+W8,作品化与投递校准,18-24,"演示视频；架构图；CI badge；评测报告；简历项目；20-30条目标JD校准","陌生工程师10分钟可运行；A/B/C档投递清单完成","按证据投递Agent应用/AIOps/RAG岗位"

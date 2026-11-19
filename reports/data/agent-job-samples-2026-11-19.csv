@@ -1,0 +1,13 @@
+company,role,city,experience,education,salary_text,skills_or_scope,source_type,as_of,confidence,notes,url
+腾讯,AI Agent应用开发工程师,深圳,2年以上（正文另写3-5年）,未在摘要中注明,未公开,TypeScript/JavaScript/React/Node或后端语言；任务编排；工具调用；上下文；异常恢复；成功率/延迟/成本,官方招聘页,2026-11-09,高,页面年限字段不一致；以官方页面为准,https://careers.tencent.com/jobdesc.html?postId=2113227819223003136
+阿里,AI Agent应用开发工程师（2027日常实习）,杭州,实习,未在摘要中注明,未公开,Python/Java/Go/C++；LangChain/LlamaIndex/AutoGen；Prompt/RAG/Tool Calling/Context Engineering；OpenAPI/RPC/MCP；评测加分,官方招聘页,2026-11-13,高,校招实习岗位,https://campus-talent.alibaba.com/campus/position/199910420012
+字节,Agent研发工程师（2027校招）,北京/深圳,校招,硕士以上,未公开,C++/Go/Python；MySQL/Redis；Agent上下文/状态/评估/可靠执行；部署/量化/分布式加分,官方招聘页,未注明,高,校招门槛与社招不同,https://jobs.bytedance.com/campus/position/7667091390681368885/detail
+立邦中国,AI Agent开发,上海,应届/经验不限,本科,10-20K（部分页面15薪）,AI Agent开发,公开招聘聚合页,未注明,低到中,招聘标价；不同聚合页信息略有差异,https://www.zhaopin.com/jobdetail/CC000100540J41006495304.htm
+九方云,Agent/RAG/多Agent,上海,校招,未注明,20-30K,Agent；RAG；多Agent,公开招聘聚合页,未注明,低到中,校招技术型样本,https://www.nowcoder.com/jobs/detail/466220
+科大讯飞,AI Agent开发,上海,校招,未注明,25-35K,AI Agent开发,公开招聘聚合页,2026-06-01,低到中,高竞争校招上沿,https://www.nowcoder.com/jobs/detail/450131
+美团,AI Agent知识库技术专家,上海,3-5年,未注明,25-45K·15薪,Agent；企业知识库,公开招聘聚合页,未注明,低到中,专家岗位名称但年限为3-5年,https://www.liepin.com/job/1986546015.shtml
+某公司,RAG研发工程师,北京,3-5年,未注明,25-35K·13薪,RAG研发,公开招聘聚合页,未注明,低到中,公司名以原页面为准,https://www.zhaopin.com/jobdetail/CC599092820J40861986904.htm
+某公司,RAG工程师,上海,3-5年,未注明,25-30K,RAG,公开招聘聚合页,未注明,低到中,公司名以原页面为准,https://www.zhaopin.com/jobdetail/CC867077430J40725869805.htm
+某公司,AI Agent开发,成都,1-3年,未注明,18-28K·13薪,AI Agent,公开招聘聚合页,未注明,低到中,非一线城市参考,https://www.zhaopin.com/jobdetail/CC837730720J41047213402.htm
+某公司,AI Agent工程师,深圳,1-3年,硕士,30-60K·15薪,AI Agent,公开招聘聚合页,未注明,低到中,上限高且要求较高；不宜视作普遍起薪,https://www.zhipin.com/zhaopin/f06fadd82645966d0nB509y9EQ~~/
+某公司,AIOps,深圳,1-3年,未注明,15-30K,AIOps,公开招聘聚合页,未注明,低到中,与DevOps背景最接近的AI过渡岗,https://www.zhaopin.com/jobdetail/CC120200310J40941043408.htm

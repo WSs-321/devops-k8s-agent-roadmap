@@ -1,0 +1,55 @@
+source,dataset,metric,segment,value,unit,confidence,caveat,url
+Hiveden,AI应用岗位聚合样本,有效岗位总数,北京上海深圳杭州,9096,岗位,中,单一平台快照；排除纯算法研究与预训练,https://hiveden.dev/docs/ai-jobs-202604
+Hiveden,AI应用岗位聚合样本,可解析薪资岗位数,北京上海深圳杭州,9031,岗位,中,招聘标价不等于offer,https://hiveden.dev/docs/ai-jobs-202604
+Hiveden,AI应用岗位聚合样本,岗位数,上海,2242,岗位,中,关键词/城市抓取有平台上限,https://hiveden.dev/docs/ai-jobs-202604
+Hiveden,AI应用岗位聚合样本,月薪区间中点均值,上海,33.8,K/月,中,混合中高级与平台岗位,https://hiveden.dev/docs/ai-jobs-202604
+Hiveden,AI应用岗位聚合样本,岗位数,北京,2364,岗位,中,关键词/城市抓取有平台上限,https://hiveden.dev/docs/ai-jobs-202604
+Hiveden,AI应用岗位聚合样本,月薪区间中点均值,北京,34.4,K/月,中,混合中高级与平台岗位,https://hiveden.dev/docs/ai-jobs-202604
+Hiveden,AI应用岗位聚合样本,岗位数,杭州,2075,岗位,中,关键词/城市抓取有平台上限,https://hiveden.dev/docs/ai-jobs-202604
+Hiveden,AI应用岗位聚合样本,月薪区间中点均值,杭州,30.2,K/月,中,混合中高级与平台岗位,https://hiveden.dev/docs/ai-jobs-202604
+Hiveden,AI应用岗位聚合样本,岗位数,深圳,2350,岗位,中,关键词/城市抓取有平台上限,https://hiveden.dev/docs/ai-jobs-202604
+Hiveden,AI应用岗位聚合样本,月薪区间中点均值,深圳,31.2,K/月,中,混合中高级与平台岗位,https://hiveden.dev/docs/ai-jobs-202604
+Hiveden,AI应用岗位聚合样本,经验要求岗位数,3-5年,3254,岗位,中,占比35.8%,https://hiveden.dev/docs/ai-jobs-202604
+Hiveden,AI应用岗位聚合样本,经验要求岗位数,5-10年,2746,岗位,中,占比30.2%,https://hiveden.dev/docs/ai-jobs-202604
+Hiveden,AI应用岗位聚合样本,经验要求岗位数,1-3年,1670,岗位,中,占比18.4%,https://hiveden.dev/docs/ai-jobs-202604
+Hiveden,AI应用岗位聚合样本,经验要求岗位数,经验不限,1025,岗位,中,占比11.3%,https://hiveden.dev/docs/ai-jobs-202604
+Hiveden,AI应用岗位聚合样本,经验要求岗位数,在校/应届,257,岗位,中,占比2.8%,https://hiveden.dev/docs/ai-jobs-202604
+Hiveden,AI应用岗位聚合样本,学历要求占比,本科,85.0,%,中,按样本内岗位统计,https://hiveden.dev/docs/ai-jobs-202604
+Hiveden,AI应用岗位聚合样本,学历要求占比,硕士,8.4,%,中,按样本内岗位统计,https://hiveden.dev/docs/ai-jobs-202604
+Hiveden,AI应用岗位聚合样本,学历要求占比,大专,4.2,%,中,按样本内岗位统计,https://hiveden.dev/docs/ai-jobs-202604
+CSDN,101条AI Agent JD样本,岗位样本数,全部,101,岗位,低到中,个人博客二次汇总,https://blog.csdn.net/l01011_/article/details/160621089
+CSDN,101条AI Agent JD样本,明确薪资样本数,全部,99,岗位,低到中,无逐条JD链接,https://blog.csdn.net/l01011_/article/details/160621089
+CSDN,101条AI Agent JD样本,月薪分布,15K以下,12.1,%,低到中,四舍五入,https://blog.csdn.net/l01011_/article/details/160621089
+CSDN,101条AI Agent JD样本,月薪分布,15-25K,28.3,%,低到中,四舍五入,https://blog.csdn.net/l01011_/article/details/160621089
+CSDN,101条AI Agent JD样本,月薪分布,25-40K,32.3,%,低到中,四舍五入,https://blog.csdn.net/l01011_/article/details/160621089
+CSDN,101条AI Agent JD样本,月薪分布,40-60K,20.2,%,低到中,四舍五入,https://blog.csdn.net/l01011_/article/details/160621089
+CSDN,101条AI Agent JD样本,月薪分布,60K以上,7.1,%,低到中,四舍五入,https://blog.csdn.net/l01011_/article/details/160621089
+CSDN,101条AI Agent JD样本,技能提及次数,Python,125,次,低到中,不是岗位覆盖率；单岗位可多次命中,https://blog.csdn.net/l01011_/article/details/160621089
+CSDN,101条AI Agent JD样本,技能提及次数,RAG+向量数据库,123,次,低到中,不是岗位覆盖率,https://blog.csdn.net/l01011_/article/details/160621089
+CSDN,101条AI Agent JD样本,技能提及次数,机器学习/深度学习,92,次,低到中,不是岗位覆盖率,https://blog.csdn.net/l01011_/article/details/160621089
+CSDN,101条AI Agent JD样本,技能提及次数,LLM,85,次,低到中,不是岗位覆盖率,https://blog.csdn.net/l01011_/article/details/160621089
+CSDN,101条AI Agent JD样本,技能提及次数,LangChain/LangGraph,65,次,低到中,不是岗位覆盖率,https://blog.csdn.net/l01011_/article/details/160621089
+CSDN,101条AI Agent JD样本,技能提及次数,Prompt,58,次,低到中,不是岗位覆盖率,https://blog.csdn.net/l01011_/article/details/160621089
+CSDN,101条AI Agent JD样本,技能提及次数,容器化,55,次,低到中,不是岗位覆盖率,https://blog.csdn.net/l01011_/article/details/160621089
+CSDN,101条AI Agent JD样本,技能提及次数,Java,45,次,低到中,不是岗位覆盖率,https://blog.csdn.net/l01011_/article/details/160621089
+CSDN,101条AI Agent JD样本,技能提及次数,微调,42,次,低到中,不是岗位覆盖率,https://blog.csdn.net/l01011_/article/details/160621089
+CSDN,101条AI Agent JD样本,技能提及次数,微服务,42,次,低到中,不是岗位覆盖率,https://blog.csdn.net/l01011_/article/details/160621089
+CSDN,101条AI Agent JD样本,技能提及次数,云平台,38,次,低到中,不是岗位覆盖率,https://blog.csdn.net/l01011_/article/details/160621089
+CSDN,101条AI Agent JD样本,技能提及次数,C++,35,次,低到中,不是岗位覆盖率,https://blog.csdn.net/l01011_/article/details/160621089
+CSDN,101条AI Agent JD样本,技能提及次数,Go,28,次,低到中,不是岗位覆盖率,https://blog.csdn.net/l01011_/article/details/160621089
+CSDN,101条AI Agent JD样本,技能提及次数,CI/CD,28,次,低到中,不是岗位覆盖率,https://blog.csdn.net/l01011_/article/details/160621089
+CSDN,101条AI Agent JD样本,技能提及次数,JS/TS,15,次,低到中,不是岗位覆盖率,https://blog.csdn.net/l01011_/article/details/160621089
+脉脉/199IT,2026春招AI宏观数据,AI岗位同比增长,2026年1-2月,12,倍,中,全AI口径,https://www.199it.com/archives/1815962.html
+脉脉/199IT,2026春招AI宏观数据,AI岗位占新经济岗位比例,2026年1-2月,26.23,%,中,全AI口径,https://www.199it.com/archives/1815962.html
+脉脉/199IT,2026春招AI宏观数据,AI人才供需比,2026年1-2月,0.97,比值,中,比值低于1表示需求大于供给,https://www.199it.com/archives/1815962.html
+脉脉/199IT,2026春招AI宏观数据,AI新发岗位平均月薪,2026年1-2月,60738,元/月,中,被算法/Infra/AI科学家拉高,https://www.199it.com/archives/1815962.html
+脉脉/199IT,2026春招AI宏观数据,明确要求AI/LLM的新发JD占比,2026年1-2月,34.39,%,中,全AI口径,https://www.199it.com/archives/1815962.html
+脉脉/199IT,2026春招AI宏观数据,AI岗位同比增长,2026年1-4月,8.7,倍,中,全AI口径,https://www.199it.com/archives/1828094.html
+脉脉/199IT,2026春招AI宏观数据,新发AI岗位渗透率,北京,30.17,%,中,全AI口径,https://www.199it.com/archives/1828094.html
+脉脉/199IT,2026春招AI宏观数据,新发AI岗位渗透率,杭州,28.54,%,中,全AI口径,https://www.199it.com/archives/1828094.html
+脉脉/199IT,2026春招AI宏观数据,新发AI岗位渗透率,上海,24.31,%,中,全AI口径,https://www.199it.com/archives/1828094.html
+脉脉/199IT,2026春招AI宏观数据,新发AI岗位渗透率,深圳,19.22,%,中,全AI口径,https://www.199it.com/archives/1828094.html
+脉脉/199IT,2026春招AI宏观数据,程序员称AI能力纳入绩效比例,2026年1-4月,38.51,%,中,调研口径,https://www.199it.com/archives/1828094.html
+脉脉/199IT,2026春招AI宏观数据,程序员称过去一年岗位优化比例,2026年1-4月,54,%,中,调研口径,https://www.199it.com/archives/1828094.html
+脉脉/199IT,2026春招AI宏观数据,程序员选择转向AI开发比例,2026年1-4月,25.7,%,中,调研口径,https://www.199it.com/archives/1828094.html
+脉脉/199IT,2026春招AI宏观数据,AI科学家/负责人平均月薪,2026年1-4月,132796,元/月,中,极端高薪会拉高全AI均值,https://www.199it.com/archives/1828094.html
