@@ -5,6 +5,7 @@ on:
     branches: [ "main" ]
     paths:
       - 'docs/**'
+      - 'reports/**/*.md'
       - '.github/workflows/ci-docs.yml'
   pull_request:
     branches: [ "main" ]
@@ -12,6 +13,7 @@ on:
       - 'docs/**'
       - '*.md'
       - 'logs/**/*.md'
+      - 'reports/**/*.md'
       - '.github/workflows/ci-docs.yml'
 
 jobs:
@@ -28,3 +30,4 @@ jobs:
             docs/**/*.md
             *.md
             logs/**/*.md
+            reports/**/*.md
